@@ -1,6 +1,6 @@
 
 #main 
-add_executable(damage main.cpp)
+add_executable(damage main.cpp math.cpp)
 
 #require pkg-config support
 find_package(PkgConfig REQUIRED)
