@@ -17,14 +17,17 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "raster.hpp"
+
 #include <iostream>
 
 #include <SDL2/SDL.h>
 
+using namespace damage;
 using namespace std;
 
-#define WIDTH 1280
-#define HEIGHT 720
+#define WIDTH 800
+#define HEIGHT 600
 
 
 int main(int argc,char* argv[])
@@ -43,7 +46,9 @@ int main(int argc,char* argv[])
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 	texture = SDL_CreateTexture(renderer,SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIDTH,HEIGHT);
 	
-	uint8_t* buffer = new uint8_t [WIDTH*HEIGHT*4];
+	Raster raster;
+	
+	raster.Resize(WIDTH,HEIGHT);
 	
 	//main loop
 	
@@ -77,20 +82,15 @@ int main(int argc,char* argv[])
 		
 		// pixel drawing
 		begin=SDL_GetTicks();
-		
-		for (int j=0;j<HEIGHT;j++) {
-			for (int i=0;i<WIDTH;i++) {
-			
-				buffer[(i*4)+j*WIDTH*4]=0xffAA55ff & t1;
-			}
-		}
+		raster.Clear();
+		raster.Draw();
 		
 		end=SDL_GetTicks();
 		
 		ms_z1=end-begin;
 		
 		begin=SDL_GetTicks();
-		SDL_UpdateTexture(texture,NULL,(void*)buffer,WIDTH*4);
+		SDL_UpdateTexture(texture,NULL,(void*)raster.frameBuffer,WIDTH*4);
 		end=SDL_GetTicks();
 		
 		ms_z2=end-begin;
