@@ -49,6 +49,13 @@ namespace damage
 			void Mult(float* r,const float* v,const float* m);
 		}
 		
+		
+		namespace v2i
+		{
+			int orient(const int* a,const int* b,const int* c);
+		}
+		
+		
 		namespace m4f
 		{
 			void Identity(float* m);

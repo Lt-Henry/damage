@@ -45,26 +45,109 @@ void Raster::Resize(int width,int height)
 	this->width=width;
 	this->height=height;
 	
-	frameBuffer=new uint8_t[width*height*4];
-	depthBuffer=new uint16_t[width*height*4];
+	frameBuffer=new uint32_t[width*height];
+	depthBuffer=new uint16_t[width*height];
 }
 
 
 void Raster::Clear()
 {
-	memset(frameBuffer,0x00,width*height*4);
-	memset(depthBuffer,0x0000,width*height*2);	
+	memset(frameBuffer,0x00000000,width*height*sizeof(uint32_t));
+	memset(depthBuffer,0x0000,width*height*sizeof(uint16_t));	
 }
 
 
 void Raster::Draw()
 {
-	for (int j=0;j<height;j++) {
-		for (int i=0;i<width;i++) {
+	float triangle[12];
 	
-			frameBuffer[(i*4)+j*width*4]=0xffAA55ff;
-		}
-	}
+	triangle[0]=5.0f;
+	triangle[1]=5.0f;
+	triangle[2]=5.0f;
+	
+	triangle[4]=width-5.0f;
+	triangle[5]=5.0f;
+	triangle[6]=5.0f;
+	
+	triangle[8]=5.0f;
+	triangle[9]=height-5.0f;
+	triangle[10]=5.0f;
+	
+	DrawTriangle(triangle);
+	
+	triangle[0]=5.0f;
+	triangle[1]=height-5.0f;
+	triangle[2]=5.0f;
+	
+	triangle[4]=width-5.0f;
+	triangle[5]=5.0f;
+	triangle[6]=5.0f;
+	
+	triangle[8]=width-5.0f;
+	triangle[9]=height-5.0f;
+	triangle[10]=5.0f;
+	
+	DrawTriangle(triangle);
+	
 }
 
 
+void Raster::DrawTriangle(const float* data)
+{
+
+	int v0[2];
+	int v1[2];
+	int v2[2];
+	
+	v0[0]=data[0];
+	v1[0]=data[4];
+	v2[0]=data[8];
+	
+	v0[1]=data[1];
+	v1[1]=data[5];
+	v2[1]=data[9];
+
+	int minx,miny;
+	int maxx,maxy;
+	
+	minx=std::min(v0[0],v1[0]);
+	minx=std::min(minx,v2[0]);
+	
+	miny=std::min(v0[1],v1[1]);
+	miny=std::min(miny,v2[1]);
+	
+	maxx=std::max(v0[0],v1[0]);
+	maxx=std::max(maxx,v2[0]);
+	
+	maxy=std::max(v0[1],v1[1]);
+	maxy=std::max(maxy,v2[1]);
+	
+	int area=v2i::orient(v0,v1,v2);
+	
+	for (int y=miny;y<=maxy;y++) {
+		for (int x=minx;x<=maxx;x++) {
+			
+			int c[2];
+			
+			c[0]=x;
+			c[1]=y;
+			
+			int w0,w1,w2;
+			
+			w0=v2i::orient(v1,v2,c);
+			w1=v2i::orient(v2,v0,c);
+			w2=v2i::orient(v0,v1,c);
+			
+			if (w0>0 and w1>0 and w2>0) {
+				uint16_t z = data[2];
+				uint16_t Z = depthBuffer[x+y*width];
+				
+				if (z>Z) {
+					depthBuffer[x+y*width]=z;
+					frameBuffer[x+y*width]=0xff0000ff;
+				}
+			}
+		}
+	}
+
+}

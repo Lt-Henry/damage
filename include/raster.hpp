@@ -31,7 +31,7 @@ namespace damage
 		int width;
 		int height;
 	
-		uint8_t* frameBuffer;
+		uint32_t* frameBuffer;
 		uint16_t* depthBuffer;
 	
 		Raster();
@@ -42,6 +42,8 @@ namespace damage
 		void Clear();
 		
 		void Draw();
+		
+		void DrawTriangle(const float* data);
 	};
 }
 

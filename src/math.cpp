@@ -117,6 +117,14 @@ namespace damage
 		}
 		
 		
+		namespace v2i
+		{
+			int orient(const int* a,const int* b,const int* c)
+			{
+				return (b[0]-a[0])*(c[1]-a[1]) - (b[1]-a[1])*(c[0]-a[0]);			}
+		}
+		
+		
 		namespace m4f
 		{
 			
