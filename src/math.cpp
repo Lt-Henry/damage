@@ -121,7 +121,8 @@ namespace damage
 		{
 			int orient(const int* a,const int* b,const int* c)
 			{
-				return (b[0]-a[0])*(c[1]-a[1]) - (b[1]-a[1])*(c[0]-a[0]);			}
+				return (b[0]-a[0])*(c[1]-a[1]) - (b[1]-a[1])*(c[0]-a[0]);
+			}
 		}
 		
 		

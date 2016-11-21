@@ -28,84 +28,210 @@ using namespace damage::math;
 using namespace std;
 
 
+Tile::Tile(int x,int y)
+{
+	this->x=x;
+	this->y=y;
+	
+	frameBuffer=new uint32_t[TILE_SIZE*TILE_SIZE];
+	depthBuffer=new uint16_t[TILE_SIZE*TILE_SIZE];
+}
+
+
+Tile::~Tile()
+{
+	delete frameBuffer;
+	delete depthBuffer;
+}
+
+
 Raster::Raster()
 {
 	frameBuffer=nullptr;
 	depthBuffer=nullptr;
+	
+	//spawn two workers
+	workers[0]=thread(&Raster::Worker,this);
+	workers[1]=thread(&Raster::Worker,this);
 }
 
 
 Raster::~Raster()
 {
+	Command cmd;
+
+	cmd.type=CommandType::Exit;
+	cmdMutex.lock();
+	cmdQueue.push(cmd);
+	cmdQueue.push(cmd);
+	cmdMutex.unlock();
 }
 
 
-void Raster::Resize(int width,int height)
+void Raster::Resize(int tilesW,int tilesH)
 {
-	this->width=width;
-	this->height=height;
+	this->tilesW=tilesW;
+	this->tilesH=tilesH;
+	this->width=tilesW*64;
+	this->height=tilesH*64;
 	
-	frameBuffer=new uint32_t[width*height];
-	depthBuffer=new uint16_t[width*height];
+	frameBuffer=new uint32_t*[tilesW*tilesH];
+	depthBuffer=new uint16_t*[tilesW*tilesH];
+	
+	for (int n=0;n<(tilesW*tilesH);n++) {
+		frameBuffer[n]=new uint32_t[64*64];
+		depthBuffer[n]=new uint16_t[64*64];
+	}
 }
 
 
 void Raster::Clear()
 {
-	memset(frameBuffer,0x00000000,width*height*sizeof(uint32_t));
-	memset(depthBuffer,0x0000,width*height*sizeof(uint16_t));	
+
+	
+	for (int ty=0;ty<tilesH;ty++) {
+		for (int tx=0;tx<tilesW;tx++) {
+			Command cmd;
+			
+			cmd.tx=tx;
+			cmd.ty=ty;
+			cmd.type=CommandType::Clear;
+			cmdMutex.lock();
+			cmdQueue.push(cmd);
+			cmdMutex.unlock();
+		}
+	}
+
+}
+
+
+void Raster::Worker()
+{
+	cout<<"* Worker enter"<<endl;
+	
+	float triangle[12];
+	
+	bool quitRequest=false;
+	
+	while (!quitRequest) {
+
+		Command cmd;
+		
+		cmdMutex.lock();
+		
+		if (cmdQueue.size()>0) {
+			cmd = cmdQueue.front();
+			cmdQueue.pop();
+		}
+		else {
+			cmd.type=CommandType::None;
+		}
+		
+		cmdMutex.unlock();
+		
+		switch (cmd.type) {
+			case CommandType::Draw:
+				
+	
+				triangle[0]=5.0f;
+				triangle[1]=5.0f;
+				triangle[2]=5.0f;
+	
+				triangle[4]=width-5.0f;
+				triangle[5]=5.0f;
+				triangle[6]=5.0f;
+	
+				triangle[8]=5.0f;
+				triangle[9]=height-5.0f;
+				triangle[10]=5.0f;
+	
+				DrawTriangle(triangle,cmd.tx,cmd.ty);
+	
+				triangle[0]=5.0f;
+				triangle[1]=height-5.0f;
+				triangle[2]=5.0f;
+	
+				triangle[4]=width-5.0f;
+				triangle[5]=5.0f;
+				triangle[6]=5.0f;
+	
+				triangle[8]=width-5.0f;
+				triangle[9]=height-5.0f;
+				triangle[10]=5.0f;
+	
+				DrawTriangle(triangle,cmd.tx,cmd.ty);
+			break;
+			
+			case CommandType::Clear:
+				memset(frameBuffer[cmd.tx+cmd.ty*tilesW],0x00000000,64*64*sizeof(uint32_t));
+				memset(depthBuffer[cmd.tx+cmd.ty*tilesW],0x0000,64*64*sizeof(uint16_t));
+			break;
+			
+			case CommandType::Exit:
+				quitRequest=true;
+			break;
+		}
+	}
+	
+	cout<<"* Worker exit"<<endl;
 }
 
 
 void Raster::Draw()
 {
-	float triangle[12];
+
+	for (int ty=0;ty<tilesH;ty++) {
+		for (int tx=0;tx<tilesW;tx++) {
+		
+			Command cmd;
+			
+			cmd.tx=tx;
+			cmd.ty=ty;
+			cmd.type=CommandType::Draw;
+			cmdMutex.lock();
+			cmdQueue.push(cmd);
+			cmdMutex.unlock();
+
+		}
 	
-	triangle[0]=5.0f;
-	triangle[1]=5.0f;
-	triangle[2]=5.0f;
+	}
 	
-	triangle[4]=width-5.0f;
-	triangle[5]=5.0f;
-	triangle[6]=5.0f;
+	bool ready=false;
 	
-	triangle[8]=5.0f;
-	triangle[9]=height-5.0f;
-	triangle[10]=5.0f;
-	
-	DrawTriangle(triangle);
-	
-	triangle[0]=5.0f;
-	triangle[1]=height-5.0f;
-	triangle[2]=5.0f;
-	
-	triangle[4]=width-5.0f;
-	triangle[5]=5.0f;
-	triangle[6]=5.0f;
-	
-	triangle[8]=width-5.0f;
-	triangle[9]=height-5.0f;
-	triangle[10]=5.0f;
-	
-	DrawTriangle(triangle);
+	while (!ready) {
+		cmdMutex.lock();
+		ready=cmdQueue.size()==0;
+		cmdMutex.unlock();
+	}
 	
 }
 
 
-void Raster::DrawTriangle(const float* data)
+static int orient(const int* a,const int* b,const int* c)
 {
+	return (b[0]-a[0])*(c[1]-a[1]) - (b[1]-a[1])*(c[0]-a[0]);
+}
+
+
+void Raster::DrawTriangle(const float* data,int tx,int ty)
+{
+
+	int screenLeft = tx*64;
+	int screenRight = screenLeft+64;
+	int screenTop = ty*64;
+	int screenBottom = screenTop+64;
 
 	int v0[2];
 	int v1[2];
 	int v2[2];
 	
-	v0[0]=data[0];
-	v1[0]=data[4];
-	v2[0]=data[8];
+	v0[0]=data[0] - screenLeft;
+	v1[0]=data[4] - screenLeft;
+	v2[0]=data[8] - screenLeft;
 	
-	v0[1]=data[1];
-	v1[1]=data[5];
-	v2[1]=data[9];
+	v0[1]=data[1] - screenTop;
+	v1[1]=data[5] - screenTop;
+	v2[1]=data[9] - screenTop;
 
 	int minx,miny;
 	int maxx,maxy;
@@ -122,7 +248,17 @@ void Raster::DrawTriangle(const float* data)
 	maxy=std::max(v0[1],v1[1]);
 	maxy=std::max(maxy,v2[1]);
 	
-	int area=v2i::orient(v0,v1,v2);
+	minx=std::max(minx,0);
+	maxx=std::min(maxx,63);
+	
+	miny=std::max(miny,0);
+	maxy=std::min(maxy,63);
+	
+	if (maxx < minx or maxy < miny) {
+		return;
+	}
+	
+	int area=orient(v0,v1,v2);
 	
 	for (int y=miny;y<=maxy;y++) {
 		for (int x=minx;x<=maxx;x++) {
@@ -134,17 +270,17 @@ void Raster::DrawTriangle(const float* data)
 			
 			int w0,w1,w2;
 			
-			w0=v2i::orient(v1,v2,c);
-			w1=v2i::orient(v2,v0,c);
-			w2=v2i::orient(v0,v1,c);
+			w0=orient(v1,v2,c);
+			w1=orient(v2,v0,c);
+			w2=orient(v0,v1,c);
 			
-			if (w0>0 and w1>0 and w2>0) {
+			if (w0>=0 and w1>=0 and w2>=0) {
 				uint16_t z = data[2];
-				uint16_t Z = depthBuffer[x+y*width];
+				uint16_t Z = depthBuffer[tx+ty*tilesW][x+y*64];
 				
 				if (z>Z) {
-					depthBuffer[x+y*width]=z;
-					frameBuffer[x+y*width]=0xff0000ff;
+					depthBuffer[tx+ty*tilesW][x+y*64]=z;
+					frameBuffer[tx+ty*tilesW][x+y*64]=0xffaa3300;
 				}
 			}
 		}

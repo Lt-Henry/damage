@@ -26,8 +26,8 @@
 using namespace damage;
 using namespace std;
 
-#define WIDTH 800
-#define HEIGHT 600
+#define WIDTH 64*12
+#define HEIGHT 64*10
 
 
 int main(int argc,char* argv[])
@@ -41,6 +41,8 @@ int main(int argc,char* argv[])
 	
 	// Simple SDL2 initialization
 	
+	cout<<"* resolution: "<<WIDTH<<"x"<<HEIGHT<<endl;
+	
 	SDL_Init(SDL_INIT_EVERYTHING);
 	window = SDL_CreateWindow("damage", 100, 100, WIDTH, HEIGHT, SDL_WINDOW_SHOWN);
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
@@ -48,7 +50,7 @@ int main(int argc,char* argv[])
 	
 	Raster raster;
 	
-	raster.Resize(WIDTH,HEIGHT);
+	raster.Resize(WIDTH/64,HEIGHT/64);
 	
 	//main loop
 	
@@ -90,7 +92,20 @@ int main(int argc,char* argv[])
 		ms_z1=end-begin;
 		
 		begin=SDL_GetTicks();
-		SDL_UpdateTexture(texture,NULL,(void*)raster.frameBuffer,WIDTH*4);
+		
+		for (int ty=0;ty<raster.tilesH;ty++) {
+			for (int tx=0;tx<raster.tilesW;tx++) {
+				SDL_Rect rect;
+				
+				rect.x=tx*64;
+				rect.y=ty*64;
+				rect.w=64;
+				rect.h=64;
+				
+				SDL_UpdateTexture(texture,&rect,(void*)raster.frameBuffer[tx+ty*raster.tilesW],64*4);
+			}
+		}
+		//SDL_UpdateTexture(texture,NULL,(void*)raster.frameBuffer,WIDTH*4);
 		end=SDL_GetTicks();
 		
 		ms_z2=end-begin;

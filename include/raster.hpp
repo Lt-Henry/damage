@@ -22,28 +22,77 @@
 #define _DAMAGE_RASTER_
 
 #include <cstdint>
+#include <thread>
+#include <mutex>
+#include <queue>
+
+
+#define TILE_SIZE 64
 
 namespace damage
 {
-	class Raster {
+
+
+	enum class CommandType {
+		None,
+		Draw,
+		Clear,
+		Exit
+	};
+	
+	
+	class Command {
 	public:
-		
-		int width;
-		int height;
+		int tx;
+		int ty;
+		CommandType type;
+	};
+	
+	
+	class Tile {
+	public:
+		int x;
+		int y;
 	
 		uint32_t* frameBuffer;
 		uint16_t* depthBuffer;
+		
+		Tile(int x,int y);
+		~Tile();
+	};
+	
+	
+	class Raster {
+	public:
+	
+		std::mutex cmdMutex;
+		std::queue<Command> cmdQueue;
+		std::thread workers[16];
+		
+		/*! screen dimensions in pixels */
+		int width;
+		int height;
+		
+		/*! screen dimensions in tiles */
+		int tilesW;
+		int tilesH;
+		
+		Tile* tiles;
+	
+		uint32_t** frameBuffer;
+		uint16_t** depthBuffer;
 	
 		Raster();
 		~Raster();
 		
-		void Resize(int width,int height);
+		void Resize(int tilesW,int tilesH);
 		
 		void Clear();
 		
+		void Worker();
 		void Draw();
 		
-		void DrawTriangle(const float* data);
+		void DrawTriangle(const float* data,int tx,int ty);
 	};
 }
 
