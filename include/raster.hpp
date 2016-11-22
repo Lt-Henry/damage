@@ -25,6 +25,7 @@
 #include <thread>
 #include <mutex>
 #include <queue>
+#include <vector>
 
 
 #define TILE_SIZE 64
@@ -33,22 +34,7 @@ namespace damage
 {
 
 
-	enum class CommandType {
-		None,
-		Draw,
-		Clear,
-		Exit
-	};
-	
-	
-	class Command {
-	public:
-		int tx;
-		int ty;
-		CommandType type;
-	};
-	
-	
+
 	class Tile {
 	public:
 		int x;
@@ -62,35 +48,57 @@ namespace damage
 	};
 	
 	
-	class Raster {
-	public:
+	enum class CommandType {
+		None,
+		Draw,
+		Clear,
+		Upload,
+		Exit
+	};
 	
+	
+	class Command {
+	public:
+		Tile* tile;
+		CommandType type;
+		
+		Command(CommandType type,Tile* tile);
+	};
+	
+	
+	class Raster {
+	private:
+		
 		std::mutex cmdMutex;
 		std::queue<Command> cmdQueue;
-		std::thread workers[16];
+		std::vector<std::thread> workers;
+		
+		/*! thread worker */
+		void Worker();
+	
+	public:
 		
 		/*! screen dimensions in pixels */
-		int width;
-		int height;
+		int screenWidth;
+		int screenHeight;
 		
 		/*! screen dimensions in tiles */
-		int tilesW;
-		int tilesH;
+		int numTilesWidth;
+		int numTilesHeight;
 		
-		Tile* tiles;
+		/*! tiles vector */
+		std::vector<Tile*> tiles;
 	
-		uint32_t** frameBuffer;
-		uint16_t** depthBuffer;
-	
-		Raster();
+		Raster(int numThreads=1);
 		~Raster();
 		
-		void Resize(int tilesW,int tilesH);
+		void Resize(int numTilesWidth,int numTilesHeight);
 		
 		void Clear();
 		
-		void Worker();
 		void Draw();
+		
+		void Flush();
 		
 		void DrawTriangle(const float* data,int tx,int ty);
 	};

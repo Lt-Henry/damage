@@ -45,14 +45,19 @@ Tile::~Tile()
 }
 
 
-Raster::Raster()
+Command::Command(CommandType type,Tile* tile)
 {
-	frameBuffer=nullptr;
-	depthBuffer=nullptr;
+	this->type=type;
+	this->tile=tile;
+}
+
+
+Raster::Raster(int numThreads)
+{
 	
-	//spawn two workers
-	workers[0]=thread(&Raster::Worker,this);
-	workers[1]=thread(&Raster::Worker,this);
+	for (int n=0;n<numThreads;n++) {
+		workers.push_back(thread(&Raster::Worker,this));
+	}
 }
 
 
