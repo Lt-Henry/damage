@@ -26,8 +26,8 @@
 using namespace damage;
 using namespace std;
 
-#define WIDTH 64*12
-#define HEIGHT 64*10
+#define WIDTH TILE_SIZE*6
+#define HEIGHT TILE_SIZE*5
 
 
 int main(int argc,char* argv[])
@@ -37,7 +37,7 @@ int main(int argc,char* argv[])
 	
 	SDL_Window* window;
 	SDL_Renderer* renderer;
-	SDL_Texture * texture;
+	SDL_Texture* texture;
 	
 	// Simple SDL2 initialization
 	
@@ -48,18 +48,14 @@ int main(int argc,char* argv[])
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 	texture = SDL_CreateTexture(renderer,SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIDTH,HEIGHT);
 	
-	Raster raster;
+	Raster raster(3);
 	
-	raster.Resize(WIDTH/64,HEIGHT/64);
+	raster.Resize(texture,WIDTH/TILE_SIZE,HEIGHT/TILE_SIZE);
 	
 	//main loop
 	
 	bool quit_request=false;
 	uint32_t t1,t2,dt;
-	
-	uint32_t begin,end;
-	uint32_t ms_z1=0;
-	uint32_t ms_z2=0;
 	
 	int fpcount = 0;
 	int fps = 0;
@@ -83,32 +79,9 @@ int main(int argc,char* argv[])
 		} // while
 		
 		// pixel drawing
-		begin=SDL_GetTicks();
-		raster.Clear();
-		raster.Draw();
 		
-		end=SDL_GetTicks();
 		
-		ms_z1=end-begin;
-		
-		begin=SDL_GetTicks();
-		
-		for (int ty=0;ty<raster.tilesH;ty++) {
-			for (int tx=0;tx<raster.tilesW;tx++) {
-				SDL_Rect rect;
-				
-				rect.x=tx*64;
-				rect.y=ty*64;
-				rect.w=64;
-				rect.h=64;
-				
-				SDL_UpdateTexture(texture,&rect,(void*)raster.frameBuffer[tx+ty*raster.tilesW],64*4);
-			}
-		}
-		//SDL_UpdateTexture(texture,NULL,(void*)raster.frameBuffer,WIDTH*4);
-		end=SDL_GetTicks();
-		
-		ms_z2=end-begin;
+		raster.Update();
 		
 		//SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer, texture, NULL, NULL);
@@ -122,10 +95,8 @@ int main(int argc,char* argv[])
 		
 		if (dt>1000) {
 			t1=t2;
-			cout<<"fps: "<<fpcount<<" z1: "<<ms_z1<<" z2: "<<ms_z2<<endl;
+			cout<<"fps: "<<fpcount<<endl;
 			fpcount=0;
-			ms_z1=0;
-			ms_z2=0;
 		}
 
 		

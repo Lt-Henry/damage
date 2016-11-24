@@ -45,6 +45,11 @@ Tile::~Tile()
 }
 
 
+Command::Command()
+{
+}
+
+
 Command::Command(CommandType type,Tile* tile)
 {
 	this->type=type;
@@ -54,7 +59,7 @@ Command::Command(CommandType type,Tile* tile)
 
 Raster::Raster(int numThreads)
 {
-	
+	// spawn workers
 	for (int n=0;n<numThreads;n++) {
 		workers.push_back(thread(&Raster::Worker,this));
 	}
@@ -63,50 +68,54 @@ Raster::Raster(int numThreads)
 
 Raster::~Raster()
 {
-	Command cmd;
+	Command cmd(CommandType::Exit,nullptr);
 
-	cmd.type=CommandType::Exit;
 	cmdMutex.lock();
-	cmdQueue.push(cmd);
-	cmdQueue.push(cmd);
+	
+	// broadcast exit signal to workers
+	for (int n=0;n<workers.size();n++) {
+		cmdQueue.push(cmd);
+		cmdQueue.push(cmd);
+	}
+	
 	cmdMutex.unlock();
+	
+	// wait for workers
+	for (int n=0;n<workers.size();n++) {
+		workers[n].join();
+	}
 }
 
 
-void Raster::Resize(int tilesW,int tilesH)
+void Raster::Resize(SDL_Texture* texture,int numTilesWidth,int numTilesHeight)
 {
-	this->tilesW=tilesW;
-	this->tilesH=tilesH;
-	this->width=tilesW*64;
-	this->height=tilesH*64;
+	this->texture=texture;
+	this->numTilesWidth=numTilesWidth;
+	this->numTilesHeight=numTilesHeight;
+	this->screenWidth=numTilesWidth*TILE_SIZE;
+	this->screenHeight=numTilesHeight*TILE_SIZE;
 	
-	frameBuffer=new uint32_t*[tilesW*tilesH];
-	depthBuffer=new uint16_t*[tilesW*tilesH];
-	
-	for (int n=0;n<(tilesW*tilesH);n++) {
-		frameBuffer[n]=new uint32_t[64*64];
-		depthBuffer[n]=new uint16_t[64*64];
+	// create tiles
+	// TODO: erase previously created tiles
+	for (int ty=0;ty<numTilesHeight;ty++) {
+		for (int tx=0;tx<numTilesWidth;tx++) {
+
+			tiles.push_back(new Tile(tx*TILE_SIZE,ty*TILE_SIZE));
+		}
 	}
+	
 }
 
 
 void Raster::Clear()
 {
-
-	
-	for (int ty=0;ty<tilesH;ty++) {
-		for (int tx=0;tx<tilesW;tx++) {
-			Command cmd;
-			
-			cmd.tx=tx;
-			cmd.ty=ty;
-			cmd.type=CommandType::Clear;
-			cmdMutex.lock();
-			cmdQueue.push(cmd);
-			cmdMutex.unlock();
-		}
+	// queue clear commands for each tile
+	cmdMutex.lock();
+	for (Tile* tile : tiles) {
+		cmdQueue.push(Command(CommandType::Clear,tile));
 	}
-
+	cmdMutex.unlock();
+	
 }
 
 
@@ -120,7 +129,7 @@ void Raster::Worker()
 	
 	while (!quitRequest) {
 
-		Command cmd;
+		Command cmd(CommandType::None,nullptr);
 		
 		cmdMutex.lock();
 		
@@ -128,52 +137,63 @@ void Raster::Worker()
 			cmd = cmdQueue.front();
 			cmdQueue.pop();
 		}
-		else {
-			cmd.type=CommandType::None;
-		}
 		
 		cmdMutex.unlock();
 		
 		switch (cmd.type) {
 			case CommandType::Draw:
 				
-	
 				triangle[0]=5.0f;
 				triangle[1]=5.0f;
 				triangle[2]=5.0f;
 	
-				triangle[4]=width-5.0f;
+				triangle[4]=screenWidth-5.0f;
 				triangle[5]=5.0f;
 				triangle[6]=5.0f;
 	
 				triangle[8]=5.0f;
-				triangle[9]=height-5.0f;
+				triangle[9]=screenHeight-5.0f;
 				triangle[10]=5.0f;
 	
-				DrawTriangle(triangle,cmd.tx,cmd.ty);
+				DrawTriangle(triangle,cmd.tile);
 	
 				triangle[0]=5.0f;
-				triangle[1]=height-5.0f;
+				triangle[1]=screenHeight-5.0f;
 				triangle[2]=5.0f;
 	
-				triangle[4]=width-5.0f;
+				triangle[4]=screenWidth-5.0f;
 				triangle[5]=5.0f;
 				triangle[6]=5.0f;
 	
-				triangle[8]=width-5.0f;
-				triangle[9]=height-5.0f;
+				triangle[8]=screenWidth-5.0f;
+				triangle[9]=screenHeight-5.0f;
 				triangle[10]=5.0f;
 	
-				DrawTriangle(triangle,cmd.tx,cmd.ty);
+				DrawTriangle(triangle,cmd.tile);
+				
+				commitMutex.lock();
+				commitQueue.push(cmd);
+				commitMutex.unlock();
+				
 			break;
 			
 			case CommandType::Clear:
-				memset(frameBuffer[cmd.tx+cmd.ty*tilesW],0x00000000,64*64*sizeof(uint32_t));
-				memset(depthBuffer[cmd.tx+cmd.ty*tilesW],0x0000,64*64*sizeof(uint16_t));
+				memset(cmd.tile->frameBuffer,0xff,TILE_SIZE*TILE_SIZE*sizeof(uint32_t));
+				memset(cmd.tile->depthBuffer,0x00,TILE_SIZE*TILE_SIZE*sizeof(uint16_t));
+				
+				commitMutex.lock();
+				commitQueue.push(cmd);
+				commitMutex.unlock();
+				
 			break;
 			
 			case CommandType::Exit:
 				quitRequest=true;
+				
+				commitMutex.lock();
+				commitQueue.push(cmd);
+				commitMutex.unlock();
+				
 			break;
 		}
 	}
@@ -184,31 +204,56 @@ void Raster::Worker()
 
 void Raster::Draw()
 {
+	// broadcast draw command
+	cmdMutex.lock();
+	for (Tile* tile : tiles) {
+		cmdQueue.push(Command(CommandType::Draw,tile));
+	}
+	cmdMutex.unlock();
+	
+}
 
-	for (int ty=0;ty<tilesH;ty++) {
-		for (int tx=0;tx<tilesW;tx++) {
+
+void Raster::Update()
+{
+
+	int uploaded=0;
+	
+	Clear();
+	
+	while (uploaded<tiles.size()) {
+	
+		Command cmd(CommandType::None,nullptr);
 		
-			Command cmd;
-			
-			cmd.tx=tx;
-			cmd.ty=ty;
-			cmd.type=CommandType::Draw;
-			cmdMutex.lock();
-			cmdQueue.push(cmd);
-			cmdMutex.unlock();
-
+		commitMutex.lock();
+		if (commitQueue.size()>0) {
+			cmd=commitQueue.front();
+			commitQueue.pop();
 		}
-	
+		commitMutex.unlock();
+		
+		switch (cmd.type) {
+		
+			case CommandType::Clear:
+				cmdMutex.lock();
+				cmdQueue.push(Command(CommandType::Draw,cmd.tile));
+				cmdMutex.unlock();
+			break;
+			
+			case CommandType::Draw:
+				SDL_Rect rect;
+				
+				rect.x=cmd.tile->x;
+				rect.y=cmd.tile->y;
+				rect.w=TILE_SIZE;
+				rect.h=TILE_SIZE;
+				
+				SDL_UpdateTexture(texture,&rect,(void*)cmd.tile->frameBuffer,TILE_SIZE*sizeof(uint32_t));
+				uploaded++;
+			break;
+		}
 	}
-	
-	bool ready=false;
-	
-	while (!ready) {
-		cmdMutex.lock();
-		ready=cmdQueue.size()==0;
-		cmdMutex.unlock();
-	}
-	
+
 }
 
 
@@ -218,13 +263,13 @@ static int orient(const int* a,const int* b,const int* c)
 }
 
 
-void Raster::DrawTriangle(const float* data,int tx,int ty)
+void Raster::DrawTriangle(const float* data,Tile* tile)
 {
 
-	int screenLeft = tx*64;
-	int screenRight = screenLeft+64;
-	int screenTop = ty*64;
-	int screenBottom = screenTop+64;
+	int screenLeft = tile->x;
+	int screenRight = tile->x+TILE_SIZE;
+	int screenTop = tile->y;
+	int screenBottom = tile->y+TILE_SIZE;
 
 	int v0[2];
 	int v1[2];
@@ -254,10 +299,10 @@ void Raster::DrawTriangle(const float* data,int tx,int ty)
 	maxy=std::max(maxy,v2[1]);
 	
 	minx=std::max(minx,0);
-	maxx=std::min(maxx,63);
+	maxx=std::min(maxx,TILE_SIZE-1);
 	
 	miny=std::max(miny,0);
-	maxy=std::min(maxy,63);
+	maxy=std::min(maxy,TILE_SIZE-1);
 	
 	if (maxx < minx or maxy < miny) {
 		return;
@@ -281,11 +326,11 @@ void Raster::DrawTriangle(const float* data,int tx,int ty)
 			
 			if (w0>=0 and w1>=0 and w2>=0) {
 				uint16_t z = data[2];
-				uint16_t Z = depthBuffer[tx+ty*tilesW][x+y*64];
+				uint16_t Z = tile->depthBuffer[x+y*TILE_SIZE];
 				
 				if (z>Z) {
-					depthBuffer[tx+ty*tilesW][x+y*64]=z;
-					frameBuffer[tx+ty*tilesW][x+y*64]=0xffaa3300;
+					tile->depthBuffer[x+y*TILE_SIZE]=z;
+					tile->frameBuffer[x+y*TILE_SIZE]=0xff99aa11;
 				}
 			}
 		}

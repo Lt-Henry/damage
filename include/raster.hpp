@@ -27,8 +27,10 @@
 #include <queue>
 #include <vector>
 
+#include <SDL2/SDL.h>
 
-#define TILE_SIZE 64
+
+#define TILE_SIZE 128
 
 namespace damage
 {
@@ -62,6 +64,7 @@ namespace damage
 		Tile* tile;
 		CommandType type;
 		
+		Command();
 		Command(CommandType type,Tile* tile);
 	};
 	
@@ -71,12 +74,18 @@ namespace damage
 		
 		std::mutex cmdMutex;
 		std::queue<Command> cmdQueue;
+		std::mutex commitMutex;
+		std::queue<Command> commitQueue;
+		
 		std::vector<std::thread> workers;
 		
 		/*! thread worker */
 		void Worker();
 	
 	public:
+	
+		/*! target texture */
+		SDL_Texture* texture;
 		
 		/*! screen dimensions in pixels */
 		int screenWidth;
@@ -92,15 +101,15 @@ namespace damage
 		Raster(int numThreads=1);
 		~Raster();
 		
-		void Resize(int numTilesWidth,int numTilesHeight);
+		void Resize(SDL_Texture* texture,int numTilesWidth,int numTilesHeight);
 		
 		void Clear();
 		
 		void Draw();
 		
-		void Flush();
+		void Update();
 		
-		void DrawTriangle(const float* data,int tx,int ty);
+		void DrawTriangle(const float* data,Tile* tile);
 	};
 }
 
