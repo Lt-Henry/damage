@@ -18,6 +18,7 @@
 */
 
 #include "raster.hpp"
+#include "mesh.hpp"
 
 #include <iostream>
 
@@ -51,6 +52,8 @@ int main(int argc,char* argv[])
 	Raster raster(3);
 	
 	raster.Resize(texture,WIDTH/TILE_SIZE,HEIGHT/TILE_SIZE);
+	
+	Mesh mesh("crate.mesh");
 	
 	//main loop
 	

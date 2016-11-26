@@ -21,6 +21,7 @@
 #ifndef _DAMAGE_MESH_
 #define _DAMAGE_MESH_
 
+#include <string>
 #include <cstdint>
 
 namespace damage
@@ -30,13 +31,15 @@ namespace damage
 	
 		uint32_t size;
 		
-		float* vertex;
+		float* vertices;
 		
-		float* uv;
+		float* uvs;
 		
-		uint16_t* material;
+		uint16_t* materials;
 		
 		Mesh();
+		Mesh(std::string filename);
+		
 		~Mesh();
 		
 	};
