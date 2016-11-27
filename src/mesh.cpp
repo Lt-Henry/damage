@@ -23,6 +23,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
+
 
 using namespace damage;
 using namespace damage::math;
@@ -64,13 +66,22 @@ Mesh::Mesh(string filename)
 		
 		cout<<"vertices:"<<numVertices<<endl;
 		
+		vector<float> verticesData;
+		vector<float> normalsData;
+		
 		for (int n=0;n<numVertices;n++) {
 			
 			// coords float x3
 			file.read(buffer,12);
+			verticesData.push_back(*((float*)buffer));
+			verticesData.push_back(*((float*)buffer+4));
+			verticesData.push_back(*((float*)buffer+8));
 			
 			// normal float x3
 			file.read(buffer,12);
+			normalsData.push_back(*((float*)buffer));
+			normalsData.push_back(*((float*)buffer+4));
+			normalsData.push_back(*((float*)buffer+8));
 			
 			// color uint8 x3 (rgb)
 			file.read(buffer,3);
@@ -91,10 +102,15 @@ Mesh::Mesh(string filename)
 		
 		cout<<"triangles:"<<numTriangles<<endl;
 		
+		vector<uint32_t> trianglesData;
+		
 		for (int n=0;n<numTriangles;n++) {
 			
 			// triangle uint32 x4
 			file.read(buffer,16);
+			trianglesData.push_back(*(uint32_t*)buffer);
+			trianglesData.push_back(*(uint32_t*)buffer+4);
+			trianglesData.push_back(*(uint32_t*)buffer+8);
 		}
 		
 		// num of textures
@@ -126,6 +142,34 @@ Mesh::Mesh(string filename)
 		}
 		
 		file.close();
+		
+		// build mesh structure
+		this->size=numTriangles;
+		this->vertices=new float[this->size * 12];
+		this->normals=new float[this->size * 12];
+		
+		for (int n=0;n<numTriangles;n++) {
+			int i0 = trianglesData[(n*3)+0];
+			int i1 = trianglesData[(n*3)+1];
+			int i2 = trianglesData[(n*3)+2];
+			
+			this->vertices[(n*12)+0]=verticesData[(i0*3)+0];
+			this->vertices[(n*12)+1]=verticesData[(i0*3)+1];
+			this->vertices[(n*12)+2]=verticesData[(i0*3)+2];
+			this->vertices[(n*12)+3]=0.0f;
+			
+			this->vertices[(n*12)+4]=verticesData[(i1*3)+0];
+			this->vertices[(n*12)+5]=verticesData[(i1*3)+1];
+			this->vertices[(n*12)+6]=verticesData[(i1*3)+2];
+			this->vertices[(n*12)+7]=0.0f;
+			
+			this->vertices[(n*12)+8]=verticesData[(i2*3)+0];
+			this->vertices[(n*12)+9]=verticesData[(i2*3)+1];
+			this->vertices[(n*12)+10]=verticesData[(i2*3)+2];
+			this->vertices[(n*12)+11]=0.0f;
+			
+			
+		}
 	}
 		
 }

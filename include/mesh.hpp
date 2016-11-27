@@ -33,6 +33,8 @@ namespace damage
 		
 		float* vertices;
 		
+		float* normals;
+		
 		float* uvs;
 		
 		uint16_t* materials;
