@@ -38,6 +38,14 @@ Mesh::Mesh()
 
 Mesh::Mesh(string filename)
 {
+
+	vertices=nullptr;
+	normals=nullptr;
+	uvs=nullptr;
+	materials=nullptr;
+	
+	m4f::Identity(matrix);
+
 	char buffer [128];
 	
 	ifstream file(filename,ifstream::binary);
@@ -168,7 +176,22 @@ Mesh::Mesh(string filename)
 			this->vertices[(n*12)+10]=verticesData[(i2*3)+2];
 			this->vertices[(n*12)+11]=0.0f;
 			
+			this->normals[(n*12)+0]=normalsData[(i0*3)+0];
+			this->normals[(n*12)+1]=normalsData[(i0*3)+1];
+			this->normals[(n*12)+2]=normalsData[(i0*3)+2];
+			this->normals[(n*12)+3]=1.0f;
 			
+			this->normals[(n*12)+4]=normalsData[(i1*3)+0];
+			this->normals[(n*12)+5]=normalsData[(i1*3)+1];
+			this->normals[(n*12)+6]=normalsData[(i1*3)+2];
+			this->normals[(n*12)+7]=1.0f;
+			
+			this->normals[(n*12)+0]=normalsData[(i2*3)+0];
+			this->normals[(n*12)+1]=normalsData[(i2*3)+1];
+			this->normals[(n*12)+2]=normalsData[(i2*3)+2];
+			this->normals[(n*12)+3]=1.0f;
+
+
 		}
 	}
 		
@@ -177,4 +200,19 @@ Mesh::Mesh(string filename)
 
 Mesh::~Mesh()
 {
+	if (vertices!=nullptr) {
+		delete [] vertices;
+	}
+	
+	if (normals!=nullptr) {
+		delete [] normals;
+	}
+	
+	if (uvs!=nullptr) {
+		delete [] uvs;
+	}
+	
+	if (materials!=nullptr) {
+		delete [] materials;
+	}
 }

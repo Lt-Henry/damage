@@ -59,6 +59,10 @@ namespace damage
 		namespace m4f
 		{
 			void Identity(float* m);
+			void Translation(float* m,float x,float y,float z);
+			void RotationX(float* m,float rads);
+			void RotationY(float* m,float rads);
+			void RotationZ(float* m,float rads);
 		}
 	}
 }

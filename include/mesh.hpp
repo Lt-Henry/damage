@@ -39,6 +39,8 @@ namespace damage
 		
 		uint16_t* materials;
 		
+		float matrix[16];
+		
 		Mesh();
 		Mesh(std::string filename);
 		

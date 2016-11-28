@@ -84,6 +84,9 @@ namespace damage
 	
 	public:
 	
+		/*! frustum */
+		float left,right,top,bottom,near,far;
+		
 		/*! target texture */
 		SDL_Texture* texture;
 		
@@ -102,6 +105,8 @@ namespace damage
 		~Raster();
 		
 		void Resize(SDL_Texture* texture,int numTilesWidth,int numTilesHeight);
+		
+		void Frustum(float left,float right,float top,float bottom,float near,float far);
 		
 		void Clear();
 		

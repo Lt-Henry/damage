@@ -52,6 +52,7 @@ int main(int argc,char* argv[])
 	Raster raster(3);
 	
 	raster.Resize(texture,WIDTH/TILE_SIZE,HEIGHT/TILE_SIZE);
+	raster.Frustum(-0.012f,0.012f,-0.01f,0.01f,0.1f,1000.0f);
 	
 	Mesh mesh("crate.mesh");
 	

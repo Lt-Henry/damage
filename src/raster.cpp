@@ -107,6 +107,17 @@ void Raster::Resize(SDL_Texture* texture,int numTilesWidth,int numTilesHeight)
 }
 
 
+void Raster::Frustum(float left,float right,float top,float bottom,float near,float far)
+{
+	this->left=left;
+	this->right=right;
+	this->top=top;
+	this->bottom=bottom;
+	this->near=near;
+	this->far=far;
+}
+
+
 void Raster::Clear()
 {
 	// queue clear commands for each tile
