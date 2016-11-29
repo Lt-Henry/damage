@@ -33,6 +33,7 @@ namespace damage
 		
 		namespace v4f
 		{
+			void Set(float* d,float* s);
 			void Set(float* r,float x,float y,float z,float w=0.0f);
 		
 			void Add(float* r,const float* a,const float* b);

@@ -212,11 +212,6 @@ void Raster::Worker()
 				
 				for (int n=0;n<this->numTriangles;n++) {
 				
-					for (int v=0;v<3;v++) {
-						cout<<"vertex: "<<source[(v*4)]<<","<<source[(v*4)+1]<<","<<source[(v*4)+2]<<endl;
-					}
-					cout<<endl;
-					
 					DrawTriangle(source,cmd.tile);
 					source+=12;
 				}
@@ -260,29 +255,21 @@ void Raster::Draw(Mesh* mesh)
 	float m1[16];
 	float m2[16];
 	
-	//m4f::Set(m1,mesh->matrix);
-	//m4f::Mult(m2,m1,mProjection);
-	//m4f::Mult(matrix,m2,mViewport);
-	//m4f::Set(matrix,m2);
-	
-	m4f::Set(matrix,mProjection);
+	m4f::Set(m1,mesh->matrix);
+	m4f::Mult(m2,m1,mProjection);
+	m4f::Mult(matrix,m2,mViewport);
 	
 	float* dest=this->vertices;
 	float* source=mesh->vertices;
-
+	
 	for (int n=0;n<mesh->size;n++) {
 	
-		for (int v=0;v<3;v++) {
-			cout<<"raw: "<<source[(v*4)]<<","<<source[(v*4)+1]<<","<<source[(v*4)+2]<<endl;
-		}
 	
 		v4f::Mult(dest,source,matrix);
 		
 		dest[0]=dest[0]/dest[3];
 		dest[1]=dest[1]/dest[3];
 		
-		cout<<"proj: "<<dest[0]<<","<<dest[1]<<","<<dest[2]<<endl;
-		
 		dest+=4;
 		source+=4;
 		
@@ -291,8 +278,6 @@ void Raster::Draw(Mesh* mesh)
 		dest[0]=dest[0]/dest[3];
 		dest[1]=dest[1]/dest[3];
 		
-		cout<<"proj: "<<dest[0]<<","<<dest[1]<<","<<dest[2]<<endl;
-		
 		dest+=4;
 		source+=4;
 		
@@ -300,8 +285,6 @@ void Raster::Draw(Mesh* mesh)
 		
 		dest[0]=dest[0]/dest[3];
 		dest[1]=dest[1]/dest[3];
-		
-		cout<<"proj: "<<dest[0]<<","<<dest[1]<<","<<dest[2]<<endl;
 		
 		dest+=4;
 		source+=4;
@@ -430,7 +413,7 @@ void Raster::DrawTriangle(const float* data,Tile* tile)
 				uint16_t z = ((data[2]-near)/(far-near))*65535;
 				uint16_t Z = tile->depthBuffer[x+y*TILE_SIZE];
 				
-				if (true) {
+				if (z>Z) {
 					tile->depthBuffer[x+y*TILE_SIZE]=z;
 					tile->frameBuffer[x+y*TILE_SIZE]=0xff99aa11;
 				}

@@ -51,10 +51,10 @@ int main(int argc,char* argv[])
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 	texture = SDL_CreateTexture(renderer,SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIDTH,HEIGHT);
 	
-	Raster raster(1);
+	Raster raster(3);
 	
 	raster.Resize(texture,WIDTH/TILE_SIZE,HEIGHT/TILE_SIZE);
-	raster.Frustum(-1.0f,1.0f,-1.0f,1.0f,0.10f,100.0f);
+	raster.Frustum(-1.0f,1.0f,-1.0f,1.0f,1.00f,100.0f);
 	
 	//Mesh mesh("crate.mesh");
 	Mesh mesh;
@@ -64,17 +64,17 @@ int main(int argc,char* argv[])
 	mesh.vertices=new float[12];
 	mesh.vertices[0]=-1;
 	mesh.vertices[1]=0;
-	mesh.vertices[2]=2;
+	mesh.vertices[2]=0;
 	mesh.vertices[3]=1;
 	
 	mesh.vertices[4]=1;
 	mesh.vertices[5]=0;
-	mesh.vertices[6]=2;
+	mesh.vertices[6]=0;
 	mesh.vertices[7]=1;
 	
-	mesh.vertices[8]=0.5;
+	mesh.vertices[8]=0.0;
 	mesh.vertices[9]=1;
-	mesh.vertices[10]=2;
+	mesh.vertices[10]=0;
 	mesh.vertices[11]=1;
 	
 	
@@ -112,13 +112,12 @@ int main(int argc,char* argv[])
 		phi+=0.01f;
 		
 		// move mesh
-		m4f::Translation(mT,0.0f,0.0f,4.0f);
+		m4f::Translation(mT,0.0f,0.0f,2.0f);
 		m4f::RotationY(mR,phi);
 		
 		m4f::Mult(mesh.matrix,mR,mT);
 		
-		m4f::Set(mesh.matrix,mT);
-		m4f::Identity(mesh.matrix);
+		//m4f::Set(mesh.matrix,mT);
 		
 		raster.Draw(&mesh);
 		raster.Update();

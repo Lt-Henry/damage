@@ -26,6 +26,15 @@ namespace damage
 		namespace v4f
 		{
 		
+			void Set(float* d,float* s)
+			{
+				d[0]=s[0];
+				d[1]=s[1];
+				d[2]=s[2];
+				d[3]=s[3];
+			}
+			
+			
 			void Set(float* r,float x,float y,float z,float w)
 			{
 				r[0]=x;
@@ -108,10 +117,10 @@ namespace damage
 				r[3]=0.0f;
 				
 				for (int n=0;n<4;n++) {
-					r[0]+= m[4*0+n] + v[n];
-					r[1]+= m[4*1+n] + v[n];
-					r[2]+= m[4*2+n] + v[n];
-					r[3]+= m[4*3+n] + v[n];
+					r[0]+= m[4*0+n] * v[n];
+					r[1]+= m[4*1+n] * v[n];
+					r[2]+= m[4*2+n] * v[n];
+					r[3]+= m[4*3+n] * v[n];
 				}
 			}
 		}
