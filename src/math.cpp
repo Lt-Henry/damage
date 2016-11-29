@@ -74,7 +74,7 @@ namespace damage
 			float Norm(const float* a)
 			{
 				float tmp=(a[0]*a[0])+(a[1]*a[1])+(a[2]*a[2])+(a[3]*a[3]);
-				return sqrt(tmp);	
+				return sqrt(tmp);
 			}
 			
 			
@@ -96,7 +96,7 @@ namespace damage
 				a[0]*=rW;
 				a[1]*=rW;
 				a[2]*=rW;
-				a[3]=1.0f;	
+				a[3]=1.0f;
 			}
 			
 			
@@ -248,6 +248,29 @@ namespace damage
 				m[14]=0.0f;
 				m[15]=1.0f;
 			}
+			
+			
+			void Mult(float* r,float* a,float* b)
+			{
+				// unoptimized matrix mult
+				for (int i=0;i<16;i+=4) {
+					for (int j=0;j<4;j++) {
+						r[i + j] = (b[i + 0] * a[j + 0])
+						+ (b[i + 1] * a[j + 4])
+						+ (b[i + 2] * a[j + 8])
+						+ (b[i + 3] * a[j + 12]);
+					}
+				}
+			}
+			
+			
+			void Set(float* m,float* s)
+			{
+				for (int n=0;n<16;n++) {
+					m[n]=s[n];
+				}
+			}
+			
 		}
 	}
 }

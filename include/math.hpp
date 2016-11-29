@@ -63,6 +63,9 @@ namespace damage
 			void RotationX(float* m,float rads);
 			void RotationY(float* m,float rads);
 			void RotationZ(float* m,float rads);
+
+			void Mult(float* r,float* a,float* b);
+			void Set(float* m,float* s);
 		}
 	}
 }

@@ -59,6 +59,15 @@ Command::Command(CommandType type,Tile* tile)
 
 Raster::Raster(int numThreads)
 {
+
+	m4f::Identity(mProjection);
+	m4f::Identity(mViewport);
+	
+	// vbo
+	vertices=new float[4*100];
+	normals=new float[4*100];
+	numTriangles=0;
+
 	// spawn workers
 	for (int n=0;n<numThreads;n++) {
 		workers.push_back(thread(&Raster::Worker,this));
@@ -104,6 +113,26 @@ void Raster::Resize(SDL_Texture* texture,int numTilesWidth,int numTilesHeight)
 		}
 	}
 	
+	// viewport matrix
+	mViewport[0]=screenWidth/2.0f;
+	mViewport[1]=0.0f;
+	mViewport[2]=0.0f;
+	mViewport[3]=screenWidth/2.0f;
+	
+	mViewport[4]=0.0f;
+	mViewport[5]=-screenHeight/2.0f;
+	mViewport[6]=0.0f;
+	mViewport[7]=screenHeight/2.0f;
+	
+	mViewport[8]=0.0f;
+	mViewport[9]=0.0f;
+	mViewport[10]=1.0f;
+	mViewport[11]=0.0f;
+	
+	mViewport[12]=0.0f;
+	mViewport[13]=0.0f;
+	mViewport[14]=0.0f;
+	mViewport[15]=1.0f;
 }
 
 
@@ -115,6 +144,31 @@ void Raster::Frustum(float left,float right,float top,float bottom,float near,fl
 	this->bottom=bottom;
 	this->near=near;
 	this->far=far;
+
+	mProjection[0]=(2.0f*near)/(right-left);
+	mProjection[1]=0.0f;
+	mProjection[2]=(right+left)/(right-left);
+	mProjection[3]=0.0f;
+	
+	mProjection[4]=0.0f;
+	mProjection[5]=(2.0f*near)/(top-bottom);
+	mProjection[6]=(top+bottom)/(top-bottom);
+	mProjection[7]=0.0f;
+
+	mProjection[8]=0.0f;
+	mProjection[9]=0.0f;
+	mProjection[10]=-(far+near)/(far-near);
+	mProjection[11]=-(2.0f*far*near)/(far-near);
+
+	mProjection[12]=0.0f;
+	mProjection[13]=0.0f;
+	mProjection[14]=-1.0f;
+	mProjection[15]=0.0f;
+	
+	for (int n=0;n<16;n++) {
+		cout<<mProjection[n]<<" ";
+	}
+	cout<<endl;
 }
 
 
@@ -134,7 +188,7 @@ void Raster::Worker()
 {
 	cout<<"* Worker enter"<<endl;
 	
-	float triangle[12];
+	float* source;
 	
 	bool quitRequest=false;
 	
@@ -154,33 +208,19 @@ void Raster::Worker()
 		switch (cmd.type) {
 			case CommandType::Draw:
 				
-				triangle[0]=5.0f;
-				triangle[1]=5.0f;
-				triangle[2]=5.0f;
-	
-				triangle[4]=screenWidth-5.0f;
-				triangle[5]=5.0f;
-				triangle[6]=5.0f;
-	
-				triangle[8]=5.0f;
-				triangle[9]=screenHeight-5.0f;
-				triangle[10]=5.0f;
-	
-				DrawTriangle(triangle,cmd.tile);
-	
-				triangle[0]=5.0f;
-				triangle[1]=screenHeight-5.0f;
-				triangle[2]=5.0f;
-	
-				triangle[4]=screenWidth-5.0f;
-				triangle[5]=5.0f;
-				triangle[6]=5.0f;
-	
-				triangle[8]=screenWidth-5.0f;
-				triangle[9]=screenHeight-5.0f;
-				triangle[10]=5.0f;
-	
-				DrawTriangle(triangle,cmd.tile);
+				source=this->vertices;
+				
+				for (int n=0;n<this->numTriangles;n++) {
+				
+					for (int v=0;v<3;v++) {
+						cout<<"vertex: "<<source[(v*4)]<<","<<source[(v*4)+1]<<","<<source[(v*4)+2]<<endl;
+					}
+					cout<<endl;
+					
+					DrawTriangle(source,cmd.tile);
+					source+=12;
+				}
+				
 				
 				commitMutex.lock();
 				commitQueue.push(cmd);
@@ -213,15 +253,62 @@ void Raster::Worker()
 }
 
 
-void Raster::Draw()
+void Raster::Draw(Mesh* mesh)
 {
-	// broadcast draw command
-	cmdMutex.lock();
-	for (Tile* tile : tiles) {
-		cmdQueue.push(Command(CommandType::Draw,tile));
-	}
-	cmdMutex.unlock();
+
+	float matrix[16];
+	float m1[16];
+	float m2[16];
 	
+	//m4f::Set(m1,mesh->matrix);
+	//m4f::Mult(m2,m1,mProjection);
+	//m4f::Mult(matrix,m2,mViewport);
+	//m4f::Set(matrix,m2);
+	
+	m4f::Set(matrix,mProjection);
+	
+	float* dest=this->vertices;
+	float* source=mesh->vertices;
+
+	for (int n=0;n<mesh->size;n++) {
+	
+		for (int v=0;v<3;v++) {
+			cout<<"raw: "<<source[(v*4)]<<","<<source[(v*4)+1]<<","<<source[(v*4)+2]<<endl;
+		}
+	
+		v4f::Mult(dest,source,matrix);
+		
+		dest[0]=dest[0]/dest[3];
+		dest[1]=dest[1]/dest[3];
+		
+		cout<<"proj: "<<dest[0]<<","<<dest[1]<<","<<dest[2]<<endl;
+		
+		dest+=4;
+		source+=4;
+		
+		v4f::Mult(dest,source,matrix);
+		
+		dest[0]=dest[0]/dest[3];
+		dest[1]=dest[1]/dest[3];
+		
+		cout<<"proj: "<<dest[0]<<","<<dest[1]<<","<<dest[2]<<endl;
+		
+		dest+=4;
+		source+=4;
+		
+		v4f::Mult(dest,source,matrix);
+		
+		dest[0]=dest[0]/dest[3];
+		dest[1]=dest[1]/dest[3];
+		
+		cout<<"proj: "<<dest[0]<<","<<dest[1]<<","<<dest[2]<<endl;
+		
+		dest+=4;
+		source+=4;
+		
+		this->numTriangles++;
+	
+	}
 }
 
 
@@ -264,6 +351,10 @@ void Raster::Update()
 			break;
 		}
 	}
+	
+	
+	// reset vbo
+	this->numTriangles=0;
 
 }
 
@@ -336,10 +427,10 @@ void Raster::DrawTriangle(const float* data,Tile* tile)
 			w2=orient(v0,v1,c);
 			
 			if (w0>=0 and w1>=0 and w2>=0) {
-				uint16_t z = data[2];
+				uint16_t z = ((data[2]-near)/(far-near))*65535;
 				uint16_t Z = tile->depthBuffer[x+y*TILE_SIZE];
 				
-				if (z>Z) {
+				if (true) {
 					tile->depthBuffer[x+y*TILE_SIZE]=z;
 					tile->frameBuffer[x+y*TILE_SIZE]=0xff99aa11;
 				}

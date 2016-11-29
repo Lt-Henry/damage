@@ -22,6 +22,7 @@
 #include "math.hpp"
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <vector>
 
@@ -33,6 +34,10 @@ using namespace std;
 
 Mesh::Mesh()
 {
+	vertices=nullptr;
+	normals=nullptr;
+	uvs=nullptr;
+	materials=nullptr;
 }
 
 
@@ -190,8 +195,17 @@ Mesh::Mesh(string filename)
 			this->normals[(n*12)+1]=normalsData[(i2*3)+1];
 			this->normals[(n*12)+2]=normalsData[(i2*3)+2];
 			this->normals[(n*12)+3]=1.0f;
+			
+			std::cout << std::fixed;
+			std::cout << std::setprecision(2);
+			
+			cout<<"face: "<<i0<<","<<i1<<","<<i2<<endl;
 
-
+			cout<<"vertex: "<<this->vertices[(n*12)+0]<<","<<this->vertices[(n*12)+1]<<","<<this->vertices[(n*12)+2]<<endl;
+			cout<<"vertex: "<<this->vertices[(n*12)+4]<<","<<this->vertices[(n*12)+5]<<","<<this->vertices[(n*12)+6]<<endl;
+			cout<<"vertex: "<<this->vertices[(n*12)+8]<<","<<this->vertices[(n*12)+9]<<","<<this->vertices[(n*12)+10]<<endl;
+			cout<<endl;
+			
 		}
 	}
 		

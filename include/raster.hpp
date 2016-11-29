@@ -21,6 +21,8 @@
 #ifndef _DAMAGE_RASTER_
 #define _DAMAGE_RASTER_
 
+#include "mesh.hpp"
+
 #include <cstdint>
 #include <thread>
 #include <mutex>
@@ -81,11 +83,18 @@ namespace damage
 		
 		/*! thread worker */
 		void Worker();
+		
+		/*! vbo */
+		int numTriangles;
+		float* vertices;
+		float* normals;
 	
 	public:
 	
 		/*! frustum */
 		float left,right,top,bottom,near,far;
+		float mProjection[16];
+		float mViewport[16];
 		
 		/*! target texture */
 		SDL_Texture* texture;
@@ -110,7 +119,7 @@ namespace damage
 		
 		void Clear();
 		
-		void Draw();
+		void Draw(Mesh* mesh);
 		
 		void Update();
 		
