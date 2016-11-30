@@ -64,8 +64,8 @@ Raster::Raster(int numThreads)
 	m4f::Identity(mViewport);
 	
 	// vbo
-	vertices=new float[4*100];
-	normals=new float[4*100];
+	vertices=new float[12*100000];
+	normals=new float[12*100000];
 	numTriangles=0;
 
 	// spawn workers
@@ -165,10 +165,6 @@ void Raster::Frustum(float left,float right,float top,float bottom,float near,fl
 	mProjection[14]=-1.0f;
 	mProjection[15]=0.0f;
 	
-	for (int n=0;n<16;n++) {
-		cout<<mProjection[n]<<" ";
-	}
-	cout<<endl;
 }
 
 
@@ -261,6 +257,7 @@ void Raster::Draw(Mesh* mesh)
 	
 	float* dest=this->vertices;
 	float* source=mesh->vertices;
+	
 	
 	for (int n=0;n<mesh->size;n++) {
 	

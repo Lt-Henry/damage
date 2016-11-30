@@ -41,7 +41,7 @@ Mesh::Mesh()
 }
 
 
-Mesh::Mesh(string filename)
+Mesh::Mesh(string filename,TexturePool* pool)
 {
 
 	vertices=nullptr;
@@ -63,12 +63,8 @@ Mesh::Mesh(string filename)
 		
 		string header(buffer);
 		
-		cout<<"header:"<<header<<endl;
-		
 		// version
 		file.read(buffer,1);
-		
-		cout<<"version:"<<(int)buffer[0]<<endl;
 		
 		// num of vertices
 		file.read(buffer,4);
@@ -77,30 +73,37 @@ Mesh::Mesh(string filename)
 		
 		numVertices=*((uint32_t*)buffer);
 		
-		cout<<"vertices:"<<numVertices<<endl;
-		
 		vector<float> verticesData;
 		vector<float> normalsData;
+		vector<float> uvsData;
 		
 		for (int n=0;n<numVertices;n++) {
 			
 			// coords float x3
 			file.read(buffer,12);
-			verticesData.push_back(*((float*)buffer));
-			verticesData.push_back(*((float*)buffer+4));
-			verticesData.push_back(*((float*)buffer+8));
+			
+			float* ptr=(float*)buffer;
+			verticesData.push_back(ptr[0]);
+			verticesData.push_back(ptr[1]);
+			verticesData.push_back(ptr[2]);
 			
 			// normal float x3
 			file.read(buffer,12);
-			normalsData.push_back(*((float*)buffer));
-			normalsData.push_back(*((float*)buffer+4));
-			normalsData.push_back(*((float*)buffer+8));
+			
+			ptr=(float*)buffer;
+			normalsData.push_back(ptr[0]);
+			normalsData.push_back(ptr[1]);
+			normalsData.push_back(ptr[2]);
 			
 			// color uint8 x3 (rgb)
 			file.read(buffer,3);
 			
 			// uv float x2
 			file.read(buffer,8);
+			
+			ptr=(float*)buffer;
+			uvsData.push_back(ptr[0]);
+			uvsData.push_back(ptr[1]);
 			
 			// tag
 			file.read(buffer,1);
@@ -113,7 +116,7 @@ Mesh::Mesh(string filename)
 		
 		numTriangles=*((uint32_t*)buffer);
 		
-		cout<<"triangles:"<<numTriangles<<endl;
+		cout<<"Mesh triangles: "<<numTriangles<<endl;
 		
 		vector<uint32_t> trianglesData;
 		
@@ -121,9 +124,11 @@ Mesh::Mesh(string filename)
 			
 			// triangle uint32 x4
 			file.read(buffer,16);
-			trianglesData.push_back(*(uint32_t*)buffer);
-			trianglesData.push_back(*(uint32_t*)buffer+4);
-			trianglesData.push_back(*(uint32_t*)buffer+8);
+			uint32_t* ptr = (uint32_t*)buffer;
+			trianglesData.push_back(ptr[0]);
+			trianglesData.push_back(ptr[1]);
+			trianglesData.push_back(ptr[2]);
+			trianglesData.push_back(ptr[3]);
 		}
 		
 		// num of textures
@@ -133,7 +138,6 @@ Mesh::Mesh(string filename)
 		
 		numTextures=*((uint32_t*)buffer);
 		
-		cout<<"textures:"<<numTextures<<endl;
 		
 		for (int n=0;n<numTextures;n++) {
 		
@@ -152,6 +156,8 @@ Mesh::Mesh(string filename)
 			
 			cout<<"* "<<textureName<<endl;
 			
+			pool->Get(textureName);
+			
 		}
 		
 		file.close();
@@ -160,51 +166,52 @@ Mesh::Mesh(string filename)
 		this->size=numTriangles;
 		this->vertices=new float[this->size * 12];
 		this->normals=new float[this->size * 12];
+		this->uvs=new float[this->size*6];
 		
 		for (int n=0;n<numTriangles;n++) {
-			int i0 = trianglesData[(n*3)+0];
-			int i1 = trianglesData[(n*3)+1];
-			int i2 = trianglesData[(n*3)+2];
+			int i0 = trianglesData[(n*4)+0];
+			int i1 = trianglesData[(n*4)+1];
+			int i2 = trianglesData[(n*4)+2];
 			
 			this->vertices[(n*12)+0]=verticesData[(i0*3)+0];
 			this->vertices[(n*12)+1]=verticesData[(i0*3)+1];
 			this->vertices[(n*12)+2]=verticesData[(i0*3)+2];
-			this->vertices[(n*12)+3]=0.0f;
+			this->vertices[(n*12)+3]=1.0f;
 			
 			this->vertices[(n*12)+4]=verticesData[(i1*3)+0];
 			this->vertices[(n*12)+5]=verticesData[(i1*3)+1];
 			this->vertices[(n*12)+6]=verticesData[(i1*3)+2];
-			this->vertices[(n*12)+7]=0.0f;
+			this->vertices[(n*12)+7]=1.0f;
 			
 			this->vertices[(n*12)+8]=verticesData[(i2*3)+0];
 			this->vertices[(n*12)+9]=verticesData[(i2*3)+1];
 			this->vertices[(n*12)+10]=verticesData[(i2*3)+2];
-			this->vertices[(n*12)+11]=0.0f;
+			this->vertices[(n*12)+11]=1.0f;
 			
 			this->normals[(n*12)+0]=normalsData[(i0*3)+0];
 			this->normals[(n*12)+1]=normalsData[(i0*3)+1];
 			this->normals[(n*12)+2]=normalsData[(i0*3)+2];
-			this->normals[(n*12)+3]=1.0f;
+			this->normals[(n*12)+3]=0.0f;
 			
 			this->normals[(n*12)+4]=normalsData[(i1*3)+0];
 			this->normals[(n*12)+5]=normalsData[(i1*3)+1];
 			this->normals[(n*12)+6]=normalsData[(i1*3)+2];
-			this->normals[(n*12)+7]=1.0f;
+			this->normals[(n*12)+7]=0.0f;
 			
 			this->normals[(n*12)+0]=normalsData[(i2*3)+0];
 			this->normals[(n*12)+1]=normalsData[(i2*3)+1];
 			this->normals[(n*12)+2]=normalsData[(i2*3)+2];
-			this->normals[(n*12)+3]=1.0f;
+			this->normals[(n*12)+3]=0.0f;
 			
-			std::cout << std::fixed;
-			std::cout << std::setprecision(2);
+			this->uvs[(n*6)+0]=uvsData[(i0*2)+0];
+			this->uvs[(n*6)+1]=uvsData[(i0*2)+1];
 			
-			cout<<"face: "<<i0<<","<<i1<<","<<i2<<endl;
-
-			cout<<"vertex: "<<this->vertices[(n*12)+0]<<","<<this->vertices[(n*12)+1]<<","<<this->vertices[(n*12)+2]<<endl;
-			cout<<"vertex: "<<this->vertices[(n*12)+4]<<","<<this->vertices[(n*12)+5]<<","<<this->vertices[(n*12)+6]<<endl;
-			cout<<"vertex: "<<this->vertices[(n*12)+8]<<","<<this->vertices[(n*12)+9]<<","<<this->vertices[(n*12)+10]<<endl;
-			cout<<endl;
+			this->uvs[(n*6)+2]=uvsData[(i1*2)+0];
+			this->uvs[(n*6)+3]=uvsData[(i1*2)+1];
+			
+			this->uvs[(n*6)+4]=uvsData[(i2*2)+0];
+			this->uvs[(n*6)+5]=uvsData[(i2*2)+1];
+			
 			
 		}
 	}

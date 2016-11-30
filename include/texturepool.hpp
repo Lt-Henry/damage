@@ -17,37 +17,34 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _DAMAGE_TEXTUREPOOL_
+#define _DAMAGE_TEXTUREPOOL_
 
-#ifndef _DAMAGE_MESH_
-#define _DAMAGE_MESH_
-
-#include "texturepool.hpp"
+#include "texture.hpp"
 
 #include <string>
-#include <cstdint>
+#include <map>
+
 
 namespace damage
 {
-	class Mesh {
+	
+	class TexturePool {
+	private:
+		
+		std::string basedir;
+	
+		std::map<std::string,Texture*> textures;
+		
+		Texture* Load(std::string filename);
+	
 	public:
 	
-		uint32_t size;
-		
-		float* vertices;
-		
-		float* normals;
-		
-		float* uvs;
-		
-		uint16_t* materials;
-		
-		float matrix[16];
-		
-		Mesh();
-		Mesh(std::string filename,TexturePool* pool);
-		
-		~Mesh();
-		
+		TexturePool(std::string basedir);
+		~TexturePool();
+	
+		Texture* Get(std::string name);
+	
 	};
 }
 

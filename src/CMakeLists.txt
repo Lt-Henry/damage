@@ -1,6 +1,6 @@
 
 #main 
-add_executable(damage main.cpp math.cpp raster.cpp mesh.cpp)
+add_executable(damage main.cpp math.cpp raster.cpp mesh.cpp texture.cpp texturepool.cpp)
 
 #require pkg-config support
 find_package(PkgConfig REQUIRED)

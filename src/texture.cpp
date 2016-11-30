@@ -17,38 +17,27 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "texture.hpp"
 
-#ifndef _DAMAGE_MESH_
-#define _DAMAGE_MESH_
+#include <iostream>
 
-#include "texturepool.hpp"
+using namespace damage;
+using namespace std;
 
-#include <string>
-#include <cstdint>
-
-namespace damage
+Texture::Texture(int width,int height,unsigned char bpp)
 {
-	class Mesh {
-	public:
+	owner=true;
 	
-		uint32_t size;
-		
-		float* vertices;
-		
-		float* normals;
-		
-		float* uvs;
-		
-		uint16_t* materials;
-		
-		float matrix[16];
-		
-		Mesh();
-		Mesh(std::string filename,TexturePool* pool);
-		
-		~Mesh();
-		
-	};
+	size=width*height*bpp;
+	
+	data = new uint8_t[size];
 }
 
-#endif
+
+Texture::~Texture()
+{
+	if (owner) {
+		cout<<"destroying texture..."<<endl;
+		delete [] data;
+	}
+}
