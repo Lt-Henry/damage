@@ -39,7 +39,7 @@ namespace damage
 		
 		float* uvs;
 		
-		uint16_t* materials;
+		Texture** textures;
 		
 		float matrix[16];
 		

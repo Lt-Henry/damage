@@ -64,8 +64,13 @@ Raster::Raster(int numThreads)
 	m4f::Identity(mViewport);
 	
 	// vbo
-	vertices=new float[12*100000];
-	normals=new float[12*100000];
+	const int vboSize=100000;
+	
+	vertices=new float[12*vboSize];
+	normals=new float[12*vboSize];
+	uvs=new float[6*vboSize];
+	textures=new Texture*[vboSize];
+	
 	numTriangles=0;
 
 	// spawn workers
@@ -93,12 +98,17 @@ Raster::~Raster()
 	for (int n=0;n<workers.size();n++) {
 		workers[n].join();
 	}
+	
+	delete vertices;
+	delete normals;
+	delete uvs;
+	delete textures;
 }
 
 
 void Raster::Resize(SDL_Texture* texture,int numTilesWidth,int numTilesHeight)
 {
-	this->texture=texture;
+	this->renderTarget=texture;
 	this->numTilesWidth=numTilesWidth;
 	this->numTilesHeight=numTilesHeight;
 	this->screenWidth=numTilesWidth*TILE_SIZE;
@@ -204,12 +214,10 @@ void Raster::Worker()
 		switch (cmd.type) {
 			case CommandType::Draw:
 				
-				source=this->vertices;
 				
 				for (int n=0;n<this->numTriangles;n++) {
 				
-					DrawTriangle(source,cmd.tile);
-					source+=12;
+					DrawTriangle(n,cmd.tile);
 				}
 				
 				
@@ -255,36 +263,36 @@ void Raster::Draw(Mesh* mesh)
 	m4f::Mult(m2,m1,mProjection);
 	m4f::Mult(matrix,m2,mViewport);
 	
-	float* dest=this->vertices;
-	float* source=mesh->vertices;
+	float* vDest=this->vertices;
+	float* vSource=mesh->vertices;
+	float* uvDest=this->uvs;
+	float* uvSource=mesh->uvs;
+	Texture** tDest=this->textures;
+	Texture** tSource=mesh->textures;
+	
 	
 	
 	for (int n=0;n<mesh->size;n++) {
 	
-	
-		v4f::Mult(dest,source,matrix);
+		for (int m=0;m<3;m++) {
 		
-		dest[0]=dest[0]/dest[3];
-		dest[1]=dest[1]/dest[3];
+			v4f::Mult(vDest,vSource,matrix);
 		
-		dest+=4;
-		source+=4;
+			vDest[0]=vDest[0]/vDest[3];
+			vDest[1]=vDest[1]/vDest[3];
 		
-		v4f::Mult(dest,source,matrix);
+			uvDest[0]=uvSource[0];
+			uvDest[1]=uvSource[1];
 		
-		dest[0]=dest[0]/dest[3];
-		dest[1]=dest[1]/dest[3];
+			vDest+=4;
+			vSource+=4;
+			uvDest+=2;
+			uvSource+=2;
+		}
 		
-		dest+=4;
-		source+=4;
-		
-		v4f::Mult(dest,source,matrix);
-		
-		dest[0]=dest[0]/dest[3];
-		dest[1]=dest[1]/dest[3];
-		
-		dest+=4;
-		source+=4;
+		tDest[0]=tSource[0];
+		tDest++;
+		tSource++;
 		
 		this->numTriangles++;
 	
@@ -326,7 +334,7 @@ void Raster::Update()
 				rect.w=TILE_SIZE;
 				rect.h=TILE_SIZE;
 				
-				SDL_UpdateTexture(texture,&rect,(void*)cmd.tile->frameBuffer,TILE_SIZE*sizeof(uint32_t));
+				SDL_UpdateTexture(renderTarget,&rect,(void*)cmd.tile->frameBuffer,TILE_SIZE*sizeof(uint32_t));
 				uploaded++;
 			break;
 		}
@@ -345,7 +353,7 @@ static int orient(const int* a,const int* b,const int* c)
 }
 
 
-void Raster::DrawTriangle(const float* data,Tile* tile)
+void Raster::DrawTriangle(int index,Tile* tile)
 {
 
 	int screenLeft = tile->x;
@@ -357,13 +365,17 @@ void Raster::DrawTriangle(const float* data,Tile* tile)
 	int v1[2];
 	int v2[2];
 	
-	v0[0]=data[0] - screenLeft;
-	v1[0]=data[4] - screenLeft;
-	v2[0]=data[8] - screenLeft;
+	float* vData=vertices+(index*12);
+	float* uvData=uvs+(index*6);
+	Texture** tData=textures+index;
 	
-	v0[1]=data[1] - screenTop;
-	v1[1]=data[5] - screenTop;
-	v2[1]=data[9] - screenTop;
+	v0[0]=vData[0] - screenLeft;
+	v1[0]=vData[4] - screenLeft;
+	v2[0]=vData[8] - screenLeft;
+	
+	v0[1]=vData[1] - screenTop;
+	v1[1]=vData[5] - screenTop;
+	v2[1]=vData[9] - screenTop;
 
 	int minx,miny;
 	int maxx,maxy;
@@ -406,13 +418,34 @@ void Raster::DrawTriangle(const float* data,Tile* tile)
 			w1=orient(v2,v0,c);
 			w2=orient(v0,v1,c);
 			
-			if (w0>=0 and w1>=0 and w2>=0) {
-				uint16_t z = ((data[2]-near)/(far-near))*65535;
-				uint16_t Z = tile->depthBuffer[x+y*TILE_SIZE];
+			if ((w0 | w1 | w2)>=0) {
+				uint16_t z = 0xffff-((vData[2]-near)/(far-near))*0xffff;
+				uint16_t Z = 0xffff-tile->depthBuffer[x+y*TILE_SIZE];
 				
-				if (z>Z) {
+				
+				// slow as hell!
+				float b0,b1,b2;
+				
+				b0=w0/(float)area;
+				b1=w1/(float)area;
+				b2=w2/(float)area;
+				
+				float u = uvData[0]*b0 + uvData[2]*b1 + uvData[4]*b2;
+				float v = uvData[1]*b0 + uvData[3]*b1 + uvData[5]*b2;
+				
+				int tx=u*tData[0]->width;
+				int ty=v*tData[0]->height;
+				
+				tx=tx%tData[0]->width;
+				ty=ty%tData[0]->height;
+				
+				
+				uint32_t pixel = tData[0]->Pixel(tx,ty);
+				//uint32_t pixel=0xffff0000;
+				
+				if (z<Z) {
 					tile->depthBuffer[x+y*TILE_SIZE]=z;
-					tile->frameBuffer[x+y*TILE_SIZE]=0xff99aa11;
+					tile->frameBuffer[x+y*TILE_SIZE]=pixel;
 				}
 			}
 		}

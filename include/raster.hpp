@@ -88,6 +88,8 @@ namespace damage
 		int numTriangles;
 		float* vertices;
 		float* normals;
+		float* uvs;
+		Texture** textures;
 	
 	public:
 	
@@ -97,7 +99,7 @@ namespace damage
 		float mViewport[16];
 		
 		/*! target texture */
-		SDL_Texture* texture;
+		SDL_Texture* renderTarget;
 		
 		/*! screen dimensions in pixels */
 		int screenWidth;
@@ -123,7 +125,7 @@ namespace damage
 		
 		void Update();
 		
-		void DrawTriangle(const float* data,Tile* tile);
+		void DrawTriangle(int index,Tile* tile);
 	};
 }
 

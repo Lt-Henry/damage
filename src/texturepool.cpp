@@ -42,7 +42,29 @@ Texture* TexturePool::Load(string filename)
 		throw runtime_error("IMG_Load error");
 	}
 	
+	texture = new Texture(surface->w,surface->h);
 	
+	for (int j=0;j<surface->h;j++) {
+		for (int i=0;i<surface->w;i++) {
+			uint32_t* source = (uint32_t*)surface->pixels;
+			
+			uint32_t pixel = source[i+j*surface->w];
+			
+			uint8_t r,g,b,a;
+			
+			SDL_GetRGBA(pixel,surface->format,&r,&g,&b,&a);
+			
+			/*
+			texture->data[((i*4)+(j*surface->w*4))+0]=a;
+			texture->data[((i*4)+(j*surface->w*4))+1]=r;
+			texture->data[((i*4)+(j*surface->w*4))+2]=g;
+			texture->data[((i*4)+(j*surface->w*4))+3]=b;
+			*/
+			
+			pixel = (a<<24) | (r<<16) | (g<<8) | b;
+			texture->data[i+j*surface->w]=pixel;
+		}
+	}
 	
 	
 	SDL_FreeSurface(surface);
@@ -66,7 +88,7 @@ Texture* TexturePool::Get(string name)
 {
 	if (textures.find(name)==textures.end()) {
 		cout<<"Loading: "<<name<<endl;
-		Texture* tex = Load(name);
+		textures[name] = Load(name);
 	}
 	
 	return textures[name];

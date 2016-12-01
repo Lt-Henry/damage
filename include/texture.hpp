@@ -37,17 +37,16 @@ namespace damage
 		/*! height in pixels */
 		int height;
 		
-		/*! bytes per pixel (1,2,3,4) */
-		unsigned char bpp;
-		
 		/*! size in bytes */
 		int size;
 		
 		/*! raw data */
-		uint8_t* data;
+		uint32_t* data;
 		
-		Texture(int width,int height,unsigned char bpp=4);
+		Texture(int width,int height);
 		~Texture();
+		
+		uint32_t Pixel(int x,int y);
 	};
 }
 

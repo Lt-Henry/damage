@@ -37,7 +37,7 @@ Mesh::Mesh()
 	vertices=nullptr;
 	normals=nullptr;
 	uvs=nullptr;
-	materials=nullptr;
+	textures=nullptr;
 }
 
 
@@ -47,7 +47,7 @@ Mesh::Mesh(string filename,TexturePool* pool)
 	vertices=nullptr;
 	normals=nullptr;
 	uvs=nullptr;
-	materials=nullptr;
+	textures=nullptr;
 	
 	m4f::Identity(matrix);
 
@@ -138,6 +138,7 @@ Mesh::Mesh(string filename,TexturePool* pool)
 		
 		numTextures=*((uint32_t*)buffer);
 		
+		vector<string> textureData;
 		
 		for (int n=0;n<numTextures;n++) {
 		
@@ -156,7 +157,7 @@ Mesh::Mesh(string filename,TexturePool* pool)
 			
 			cout<<"* "<<textureName<<endl;
 			
-			pool->Get(textureName);
+			textureData.push_back(textureName);
 			
 		}
 		
@@ -167,11 +168,13 @@ Mesh::Mesh(string filename,TexturePool* pool)
 		this->vertices=new float[this->size * 12];
 		this->normals=new float[this->size * 12];
 		this->uvs=new float[this->size*6];
+		this->textures=new Texture*[this->size];
 		
 		for (int n=0;n<numTriangles;n++) {
 			int i0 = trianglesData[(n*4)+0];
 			int i1 = trianglesData[(n*4)+1];
 			int i2 = trianglesData[(n*4)+2];
+			int tx = trianglesData[(n*4)+3];
 			
 			this->vertices[(n*12)+0]=verticesData[(i0*3)+0];
 			this->vertices[(n*12)+1]=verticesData[(i0*3)+1];
@@ -212,7 +215,7 @@ Mesh::Mesh(string filename,TexturePool* pool)
 			this->uvs[(n*6)+4]=uvsData[(i2*2)+0];
 			this->uvs[(n*6)+5]=uvsData[(i2*2)+1];
 			
-			
+			this->textures[n]=pool->Get(textureData[tx]);
 		}
 	}
 		
@@ -222,18 +225,18 @@ Mesh::Mesh(string filename,TexturePool* pool)
 Mesh::~Mesh()
 {
 	if (vertices!=nullptr) {
-		delete [] vertices;
+		delete vertices;
 	}
 	
 	if (normals!=nullptr) {
-		delete [] normals;
+		delete normals;
 	}
 	
 	if (uvs!=nullptr) {
-		delete [] uvs;
+		delete uvs;
 	}
 	
-	if (materials!=nullptr) {
-		delete [] materials;
+	if (textures!=nullptr) {
+		delete textures;
 	}
 }

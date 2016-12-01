@@ -24,13 +24,16 @@
 using namespace damage;
 using namespace std;
 
-Texture::Texture(int width,int height,unsigned char bpp)
+Texture::Texture(int width,int height)
 {
 	owner=true;
 	
-	size=width*height*bpp;
+	size=width*height;
+
+	this->width=width;
+	this->height=height;
 	
-	data = new uint8_t[size];
+	data = new uint32_t[size];
 }
 
 
@@ -38,6 +41,12 @@ Texture::~Texture()
 {
 	if (owner) {
 		cout<<"destroying texture..."<<endl;
-		delete [] data;
+		delete data;
 	}
+}
+
+
+uint32_t Texture::Pixel(int x,int y)
+{
+	return data[x+y*width];
 }
