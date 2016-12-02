@@ -98,15 +98,6 @@ Mesh::Mesh(string filename,TexturePool* pool)
 			// color uint8 x3 (rgb)
 			file.read(buffer,3);
 			
-			// uv float x2
-			file.read(buffer,8);
-			
-			ptr=(float*)buffer;
-			uvsData.push_back(ptr[0]);
-			uvsData.push_back(ptr[1]);
-			
-			// tag
-			file.read(buffer,1);
 		}
 		
 		// num of triangles
@@ -129,6 +120,17 @@ Mesh::Mesh(string filename,TexturePool* pool)
 			trianglesData.push_back(ptr[1]);
 			trianglesData.push_back(ptr[2]);
 			trianglesData.push_back(ptr[3]);
+			
+			// uv float x6
+			file.read(buffer,24);
+			
+			float* fptr=(float*)buffer;
+			uvsData.push_back(fptr[0]);
+			uvsData.push_back(fptr[1]);
+			uvsData.push_back(fptr[2]);
+			uvsData.push_back(fptr[3]);
+			uvsData.push_back(fptr[4]);
+			uvsData.push_back(fptr[5]);
 		}
 		
 		// num of textures
@@ -206,14 +208,14 @@ Mesh::Mesh(string filename,TexturePool* pool)
 			this->normals[(n*12)+2]=normalsData[(i2*3)+2];
 			this->normals[(n*12)+3]=0.0f;
 			
-			this->uvs[(n*6)+0]=uvsData[(i0*2)+0];
-			this->uvs[(n*6)+1]=uvsData[(i0*2)+1];
+			this->uvs[(n*6)+0]=uvsData[(n*6)+0];
+			this->uvs[(n*6)+1]=uvsData[(n*6)+1];
 			
-			this->uvs[(n*6)+2]=uvsData[(i1*2)+0];
-			this->uvs[(n*6)+3]=uvsData[(i1*2)+1];
+			this->uvs[(n*6)+2]=uvsData[(n*6)+2];
+			this->uvs[(n*6)+3]=uvsData[(n*6)+3];
 			
-			this->uvs[(n*6)+4]=uvsData[(i2*2)+0];
-			this->uvs[(n*6)+5]=uvsData[(i2*2)+1];
+			this->uvs[(n*6)+4]=uvsData[(n*6)+4];
+			this->uvs[(n*6)+5]=uvsData[(n*6)+5];
 			
 			this->textures[n]=pool->Get(textureData[tx]);
 		}
