@@ -217,6 +217,14 @@ Mesh::Mesh(string filename,TexturePool* pool)
 			
 			this->textures[n]=pool->Get(textureData[tx]);
 		}
+		
+		std::setprecision(2);
+		cout.setf(ios::fixed);
+		for (int n=0;n<this->size;n++) {
+			cout<<"["<<n<<"]:"<<uvs[(n*6)+0]<<","<<uvs[(n*6)+1]<<endl;
+			cout<<"["<<n<<"]:"<<uvs[(n*6)+2]<<","<<uvs[(n*6)+3]<<endl;
+			cout<<"["<<n<<"]:"<<uvs[(n*6)+4]<<","<<uvs[(n*6)+5]<<endl;
+		}
 	}
 		
 }
