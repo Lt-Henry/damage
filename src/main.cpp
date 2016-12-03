@@ -53,7 +53,7 @@ int main(int argc,char* argv[])
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 	texture = SDL_CreateTexture(renderer,SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIDTH,HEIGHT);
 	
-	Raster raster(1);
+	Raster raster(2);
 	
 	raster.Resize(texture,WIDTH/TILE_SIZE,HEIGHT/TILE_SIZE);
 	raster.Frustum(-1.0f,1.0f,-1.0f,1.0f,1.00f,100.0f);
