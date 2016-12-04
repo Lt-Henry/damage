@@ -282,6 +282,7 @@ void Raster::Draw(Mesh* mesh)
 		
 			vDest[0]*=rzw;
 			vDest[1]*=rzw;
+			
 		
 			uvDest[0]=uvSource[0]*rzw;
 			uvDest[1]=uvSource[1]*rzw;
@@ -421,14 +422,19 @@ void Raster::DrawTriangle(int index,Tile* tile)
 			c[0]=x;
 			c[1]=y;
 			
-			float w0,w1,w2;
+			int w0,w1,w2;
 			
-			w0=orient(v1,v2,c)*area;
-			w1=orient(v2,v0,c)*area;
-			w2=orient(v0,v1,c)*area;
+			w0=orient(v1,v2,c);
+			w1=orient(v2,v0,c);
+			w2=orient(v0,v1,c);
 			
-			if (w0>=0 and w1>=0 and w2>=0) {
-				float wz = rz0*w0 + rz1*w1 + rz2*w2;
+			if (w0<=0 and w1<=0 and w2<=0) {
+				float fw0,fw1,fw2;
+				fw0=w0*area;
+				fw1=w1*area;
+				fw2=w2*area;
+				
+				float wz = rz0*fw0 + rz1*fw1 + rz2*fw2;
 				wz=1.0f/wz;
 				
 				uint16_t z = 0xffff-((-wz-near)/(far-near))*0xffff;
@@ -436,9 +442,9 @@ void Raster::DrawTriangle(int index,Tile* tile)
 				
 				if (z>Z) {
 					// slow as hell!
-				
-					float u = uvData[0]*w0 + uvData[2]*w1 + uvData[4]*w2;
-					float v = uvData[1]*w0 + uvData[3]*w1 + uvData[5]*w2;
+					
+					float u = uvData[0]*fw0 + uvData[2]*fw1 + uvData[4]*fw2;
+					float v = uvData[1]*fw0 + uvData[3]*fw1 + uvData[5]*fw2;
 				
 					u*=wz;
 					v*=wz;
@@ -451,8 +457,7 @@ void Raster::DrawTriangle(int index,Tile* tile)
 				
 				
 					uint32_t pixel = tData[0]->Pixel(tx,ty);
-				
-				
+					//uint32_t pixel = tData[0]->data[tx+ty*tData[0]->width];
 					/*
 					uint32_t pixel=0xff000000;
 				
