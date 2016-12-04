@@ -277,12 +277,14 @@ void Raster::Draw(Mesh* mesh)
 		for (int m=0;m<3;m++) {
 		
 			v4f::Mult(vDest,vSource,matrix);
+			
+			float rzw=1.0f/vDest[3];
 		
-			vDest[0]=vDest[0]/vDest[3];
-			vDest[1]=vDest[1]/vDest[3];
+			vDest[0]*=rzw;
+			vDest[1]*=rzw;
 		
-			uvDest[0]=uvSource[0];
-			uvDest[1]=uvSource[1];
+			uvDest[0]=uvSource[0]*rzw;
+			uvDest[1]=uvSource[1]*rzw;
 			
 			//cout<<"uv "<<uvDest[0]<<","<<uvDest[1]<<endl;
 		
@@ -399,24 +401,17 @@ void Raster::DrawTriangle(int index,Tile* tile)
 	
 	miny=std::max(miny,0);
 	maxy=std::min(maxy,TILE_SIZE-1);
-	
+	/*
 	if (maxx < minx or maxy < miny) {
 		return;
 	}
-	
+	*/
 	float rz0=1.0f/vData[3];
 	float rz1=1.0f/vData[7];
 	float rz2=1.0f/vData[11];
 	
-	float s0,s1,s2,t0,t1,t2;
-	s0=uvData[0]*rz0;
-	t0=uvData[1]*rz0;
-	s1=uvData[2]*rz1;
-	t1=uvData[3]*rz1;
-	s2=uvData[4]*rz2;
-	t2=uvData[5]*rz2;
 	
-	float area=orient(v0,v1,v2);
+	float area=1.0f/orient(v0,v1,v2);
 	
 	for (int y=miny;y<=maxy;y++) {
 		for (int x=minx;x<=maxx;x++) {
@@ -428,9 +423,9 @@ void Raster::DrawTriangle(int index,Tile* tile)
 			
 			float w0,w1,w2;
 			
-			w0=orient(v1,v2,c)/area;
-			w1=orient(v2,v0,c)/area;
-			w2=orient(v0,v1,c)/area;
+			w0=orient(v1,v2,c)*area;
+			w1=orient(v2,v0,c)*area;
+			w2=orient(v0,v1,c)*area;
 			
 			if (w0>=0 and w1>=0 and w2>=0) {
 				float wz = rz0*w0 + rz1*w1 + rz2*w2;
@@ -439,39 +434,39 @@ void Raster::DrawTriangle(int index,Tile* tile)
 				uint16_t z = 0xffff-((-wz-near)/(far-near))*0xffff;
 				uint16_t Z = tile->depthBuffer[x+y*TILE_SIZE];
 				
-				
-				// slow as hell!
-				
-				float u = s0*w0 + s1*w1 + s2*w2;
-				float v = t0*w0 + t1*w1 + t2*w2;
-				
-				u*=wz;
-				v*=wz;
-				
-				uint16_t tx=u*tData[0]->width;
-				uint16_t ty=v*tData[0]->height;
-				
-				tx=tx%tData[0]->width;
-				ty=ty%tData[0]->height;
-				
-				
-				uint32_t pixel = tData[0]->Pixel(tx,ty);
-				
-				
-				/*
-				uint32_t pixel=0xff000000;
-				
-				const int M=8;
-				float p = (fmod(u * M, 1.0) > 0.5) ^ (fmod(v * M, 1.0) < 0.5);
-				
-				uint8_t r,g,b;
-				
-				r=p*255;
-				g=p*255;
-				b=p*255;
-				pixel=(0xff<<24) | (r<<16) | (g<<8) | b;
-				*/
 				if (z>Z) {
+					// slow as hell!
+				
+					float u = uvData[0]*w0 + uvData[2]*w1 + uvData[4]*w2;
+					float v = uvData[1]*w0 + uvData[3]*w1 + uvData[5]*w2;
+				
+					u*=wz;
+					v*=wz;
+				
+					uint16_t tx=u*tData[0]->width;
+					uint16_t ty=v*tData[0]->height;
+				
+					tx=tx%tData[0]->width;
+					ty=ty%tData[0]->height;
+				
+				
+					uint32_t pixel = tData[0]->Pixel(tx,ty);
+				
+				
+					/*
+					uint32_t pixel=0xff000000;
+				
+					const int M=8;
+					float p = (fmod(u * M, 1.0) > 0.5) ^ (fmod(v * M, 1.0) < 0.5);
+				
+					uint8_t r,g,b;
+				
+					r=p*255;
+					g=p*255;
+					b=p*255;
+					pixel=(0xff<<24) | (r<<16) | (g<<8) | b;
+					*/
+				
 					tile->depthBuffer[x+y*TILE_SIZE]=z;
 					tile->frameBuffer[x+y*TILE_SIZE]=pixel;
 				}
