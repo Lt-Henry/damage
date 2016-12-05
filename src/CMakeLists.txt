@@ -16,4 +16,4 @@ include_directories(${SDL2_INCLUDE_DIRS} ${SDL_IMG_INCLUDE_DIRS})
 target_link_libraries(damage ${SDL2_LIBRARIES} ${SDL2_IMG_LIBRARIES} -pthread)
 
 #add custom lib flags
-add_definitions(-std=c++11 -g)
+add_definitions(-std=c++11 -O3)

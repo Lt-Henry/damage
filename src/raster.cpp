@@ -407,9 +407,12 @@ void Raster::DrawTriangle(int index,Tile* tile)
 		return;
 	}
 	*/
-	float rz0=1.0f/vData[3];
-	float rz1=1.0f/vData[7];
-	float rz2=1.0f/vData[11];
+	
+	float rz[4];
+	
+	rz[0]=1.0f/vData[3];
+	rz[1]=1.0f/vData[7];
+	rz[2]=1.0f/vData[11];
 	
 	
 	float area=1.0f/orient(v0,v1,v2);
@@ -422,42 +425,41 @@ void Raster::DrawTriangle(int index,Tile* tile)
 			c[0]=x;
 			c[1]=y;
 			
-			int w0,w1,w2;
+			float w[4];
 			
-			w0=orient(v1,v2,c);
-			w1=orient(v2,v0,c);
-			w2=orient(v0,v1,c);
+			w[0]=orient(v1,v2,c);
+			w[1]=orient(v2,v0,c);
+			w[2]=orient(v0,v1,c);
 			
-			if (w0<=0 and w1<=0 and w2<=0) {
-				float fw0,fw1,fw2;
-				fw0=w0*area;
-				fw1=w1*area;
-				fw2=w2*area;
+			if (w[0]<=0 and w[1]<=0 and w[2]<=0) {
 				
-				float wz = rz0*fw0 + rz1*fw1 + rz2*fw2;
+				w[0]*=area;
+				w[1]*=area;
+				w[2]*=area;
+				
+				float wz = rz[0]*w[0] + rz[1]*w[1] + rz[2]*w[2];
 				wz=1.0f/wz;
 				
 				uint16_t z = 0xffff-((-wz-near)/(far-near))*0xffff;
 				uint16_t Z = tile->depthBuffer[x+y*TILE_SIZE];
 				
 				if (z>Z) {
-					// slow as hell!
 					
-					float u = uvData[0]*fw0 + uvData[2]*fw1 + uvData[4]*fw2;
-					float v = uvData[1]*fw0 + uvData[3]*fw1 + uvData[5]*fw2;
+					float u = uvData[0]*w[0] + uvData[2]*w[1] + uvData[4]*w[2];
+					float v = uvData[1]*w[0] + uvData[3]*w[1] + uvData[5]*w[2];
 				
 					u*=wz;
 					v*=wz;
 				
-					uint16_t tx=u*tData[0]->width;
-					uint16_t ty=v*tData[0]->height;
+					uint16_t tx=u*(tData[0]->width-1);
+					uint16_t ty=v*(tData[0]->height-1);
 				
 					tx=tx%tData[0]->width;
 					ty=ty%tData[0]->height;
 				
 				
-					uint32_t pixel = tData[0]->Pixel(tx,ty);
-					//uint32_t pixel = tData[0]->data[tx+ty*tData[0]->width];
+					//uint32_t pixel = tData[0]->Pixel(tx,ty);
+					uint32_t pixel = tData[0]->data[tx+ty*tData[0]->width];
 					/*
 					uint32_t pixel=0xff000000;
 				
