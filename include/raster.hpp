@@ -22,6 +22,7 @@
 #define _DAMAGE_RASTER_
 
 #include "mesh.hpp"
+#include "buffer.hpp"
 
 #include <cstdint>
 #include <thread>
@@ -31,8 +32,11 @@
 
 #include <SDL2/SDL.h>
 
-
+/*! tile size */
 #define TILE_SIZE 128
+
+/*! number of triangles */
+#define VBO_SIZE 100000
 
 namespace damage
 {
@@ -46,6 +50,9 @@ namespace damage
 	
 		uint32_t* frameBuffer;
 		uint16_t* depthBuffer;
+		
+		Buffer<uint32_t>* bin;
+		uint32_t triangles;
 		
 		Tile(int x,int y);
 		~Tile();
@@ -86,10 +93,10 @@ namespace damage
 		
 		/*! vbo */
 		int numTriangles;
-		float* vertices;
-		float* normals;
-		float* uvs;
-		Texture** textures;
+		Buffer<float>* vertices;
+		Buffer<float>* normals;
+		Buffer<float>* uvs;
+		Buffer<Texture*>* textures;
 	
 	public:
 	

@@ -22,6 +22,7 @@
 
 #include <iostream>
 #include <cstring>
+#include <algorithm>
 
 using namespace damage;
 using namespace damage::math;
@@ -35,6 +36,9 @@ Tile::Tile(int x,int y)
 	
 	frameBuffer=new uint32_t[TILE_SIZE*TILE_SIZE];
 	depthBuffer=new uint16_t[TILE_SIZE*TILE_SIZE];
+	
+	bin = new Buffer<uint32_t>(VBO_SIZE);
+	triangles=0;
 }
 
 
@@ -42,6 +46,8 @@ Tile::~Tile()
 {
 	delete frameBuffer;
 	delete depthBuffer;
+	
+	delete bin;
 }
 
 
@@ -64,14 +70,13 @@ Raster::Raster(int numThreads)
 	m4f::Identity(mViewport);
 	
 	// vbo
-	const int vboSize=100000;
-	
-	vertices=new float[12*vboSize];
-	normals=new float[12*vboSize];
-	uvs=new float[6*vboSize];
-	textures=new Texture*[vboSize];
+	vertices=new Buffer<float>(12*VBO_SIZE);
+	normals=new Buffer<float>(12*VBO_SIZE);
+	uvs=new Buffer<float>(6*VBO_SIZE);
+	textures=new Buffer<Texture*>(VBO_SIZE);
 	
 	numTriangles=0;
+	
 
 	// spawn workers
 	for (int n=0;n<numThreads;n++) {
@@ -215,11 +220,10 @@ void Raster::Worker()
 			case CommandType::Draw:
 				
 				
-				for (int n=0;n<this->numTriangles;n++) {
-				
-					DrawTriangle(n,cmd.tile);
+				for (int n=0;n<cmd.tile->triangles;n++) {
+					DrawTriangle(cmd.tile->bin->Begin()[n],cmd.tile);
 				}
-				
+				cmd.tile->triangles=0;
 				
 				commitMutex.lock();
 				commitQueue.push(cmd);
@@ -263,11 +267,11 @@ void Raster::Draw(Mesh* mesh)
 	m4f::Mult(m2,m1,mProjection);
 	m4f::Mult(matrix,m2,mViewport);
 	
-	float* vDest=this->vertices;
+	float* vDest=vertices->Begin();
 	float* vSource=mesh->vertices;
-	float* uvDest=this->uvs;
+	float* uvDest=uvs->Begin();
 	float* uvSource=mesh->uvs;
-	Texture** tDest=this->textures;
+	Texture** tDest=textures->Begin();
 	Texture** tSource=mesh->textures;
 	
 	
@@ -301,6 +305,47 @@ void Raster::Draw(Mesh* mesh)
 		
 		this->numTriangles++;
 	
+	}
+	
+	
+	vDest=vertices->Begin();
+	
+	for (int n=0;n<numTriangles;n++) {
+	
+		float minx,miny,maxx,maxy;
+		
+		minx = std::min({vDest[0],vDest[4],vDest[8]});
+		maxx = std::max({vDest[0],vDest[4],vDest[8]});
+		miny = std::min({vDest[1],vDest[5],vDest[9]});
+		maxy = std::max({vDest[1],vDest[5],vDest[9]});
+		
+		minx=std::max(minx,0.0f);
+		miny=std::max(miny,0.0f);
+		
+		maxx=std::min(maxx,(float)screenWidth-1);
+		maxy=std::min(maxy,(float)screenHeight-1);
+		
+		int sx,sy;
+		int ex,ey;
+		
+		sx=minx/TILE_SIZE;
+		sy=miny/TILE_SIZE;
+		
+		ex=maxx/TILE_SIZE;
+		ey=maxy/TILE_SIZE;
+		
+		for (int j=sy;j<=ey;j++) {
+			for (int i=sx;i<=ex;i++) {
+				Tile* tile =tiles[i+j*numTilesWidth];
+				
+				tile->bin->Begin()[tile->triangles]=n;
+				tile->triangles++;
+			}
+		}
+		
+	
+	
+		vDest+=12;
 	}
 }
 
@@ -374,9 +419,9 @@ void Raster::DrawTriangle(int index,Tile* tile)
 	int v1[2];
 	int v2[2];
 	
-	float* vData=vertices+(index*12);
-	float* uvData=uvs+(index*6);
-	Texture** tData=textures+index;
+	float* vData=vertices->Begin()+(index*12);
+	float* uvData=uvs->Begin()+(index*6);
+	Texture** tData=textures->Begin()+index;
 	
 	v0[0]=vData[0] - screenLeft;
 	v1[0]=vData[4] - screenLeft;
@@ -389,17 +434,14 @@ void Raster::DrawTriangle(int index,Tile* tile)
 	int minx,miny;
 	int maxx,maxy;
 	
-	minx=std::min(v0[0],v1[0]);
-	minx=std::min(minx,v2[0]);
+	minx=std::min({v0[0],v1[0],v2[0]});
 	
-	miny=std::min(v0[1],v1[1]);
-	miny=std::min(miny,v2[1]);
+	miny=std::min({v0[1],v1[1],v2[1]});
 	
-	maxx=std::max(v0[0],v1[0]);
-	maxx=std::max(maxx,v2[0]);
+	maxx=std::max({v0[0],v1[0],v2[0]});
 	
-	maxy=std::max(v0[1],v1[1]);
-	maxy=std::max(maxy,v2[1]);
+	maxy=std::max({v0[1],v1[1],v2[1]});
+
 	
 	minx=std::max(minx,0);
 	maxx=std::min(maxx,TILE_SIZE-1);
@@ -440,7 +482,7 @@ void Raster::DrawTriangle(int index,Tile* tile)
 		
 			if (w0<=0 and w1<=0 and w2<=0) {
 			
-				float fw[3]={w0,w1,w2};
+				float fw[4]={w0,w1,w2,0.0f};
 				
 				fw[0]*=area;
 				fw[1]*=area;

@@ -21,6 +21,7 @@
 #define _DAMAGE_BUFFER_
 
 #include <cstdint>
+#include <memory>
 
 namespace damage
 {
@@ -28,21 +29,39 @@ namespace damage
 	class Buffer {
 	private:
 	
-		int size;
-		int capacity;
+		size_t size;
+		size_t capacity;
+
 		
-		T* begin;
-		uint8_t* ptr;
+		T* raw;
+		T* ptr;
 	
 	public:
 	
-		Buffer(int capacity=32)
+		Buffer(size_t capacity=32)
 		{
+			raw = new T[capacity+1];
+			void* tmp=raw;
+			std::align(alignof(T),sizeof(T)*capacity,tmp,size);
+			ptr=static_cast<T*>(tmp);
 		}
 		
 		
 		~Buffer()
 		{
+			delete raw;
+		}
+		
+		
+		size_t Size()
+		{
+			return size;
+		}
+		
+		
+		T* Begin()
+		{
+			return ptr;
 		}
 	};
 }
