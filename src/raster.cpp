@@ -278,26 +278,34 @@ void Raster::Draw(Mesh* mesh)
 	
 	for (int n=0;n<mesh->size;n++) {
 	
-		for (int m=0;m<3;m++) {
+		v4f::Mult(vDest,vSource,matrix);
+		v4f::Mult(vDest+4,vSource+4,matrix);
+		v4f::Mult(vDest+8,vSource+8,matrix);
 		
-			v4f::Mult(vDest,vSource,matrix);
-			
-			float rzw=1.0f/vDest[3];
+		float rz0,rz1,rz2;
 		
-			vDest[0]*=rzw;
-			vDest[1]*=rzw;
-			
+		rz0=1.0f/vDest[3];
+		rz1=1.0f/vDest[7];
+		rz2=1.0f/vDest[11];
 		
-			uvDest[0]=uvSource[0]*rzw;
-			uvDest[1]=uvSource[1]*rzw;
-			
-			//cout<<"uv "<<uvDest[0]<<","<<uvDest[1]<<endl;
+		vDest[0]*=rz0;
+		vDest[1]*=rz0;
+		vDest[4]*=rz1;
+		vDest[5]*=rz1;
+		vDest[8]*=rz2;
+		vDest[9]*=rz2;
 		
-			vDest+=4;
-			vSource+=4;
-			uvDest+=2;
-			uvSource+=2;
-		}
+		uvDest[0]=uvSource[0]*rz0;
+		uvDest[1]=uvSource[2]*rz1;
+		uvDest[2]=uvSource[4]*rz2;
+		uvDest[3]=uvSource[1]*rz0;
+		uvDest[4]=uvSource[3]*rz1;
+		uvDest[5]=uvSource[5]*rz2;
+		
+		vDest+=12;
+		vSource+=12;
+		uvDest+=6;
+		uvSource+=6;
 		
 		tDest[0]=tSource[0];
 		tDest++;
@@ -480,7 +488,7 @@ void Raster::DrawTriangle(int index,Tile* tile)
 	
 		for (p[0]=minx;p[0]<=maxx;p[0]++) {
 		
-			if (w0<=0 and w1<=0 and w2<=0) {
+			if (w0>=0 and w1>=0 and w2>=0) {
 			
 				float fw[4]={w0,w1,w2,0.0f};
 				
@@ -496,8 +504,8 @@ void Raster::DrawTriangle(int index,Tile* tile)
 				
 				if (z>Z) {
 				
-					float u = uvData[0]*fw[0] + uvData[2]*fw[1] + uvData[4]*fw[2];
-					float v = uvData[1]*fw[0] + uvData[3]*fw[1] + uvData[5]*fw[2];
+					float u = uvData[0]*fw[0] + uvData[1]*fw[1] + uvData[2]*fw[2];
+					float v = uvData[3]*fw[0] + uvData[4]*fw[1] + uvData[5]*fw[2];
 
 					u*=wz;
 					v*=wz;

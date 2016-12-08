@@ -36,7 +36,7 @@
 #define TILE_SIZE 128
 
 /*! number of triangles */
-#define VBO_SIZE 100000
+#define VBO_SIZE 64000
 
 namespace damage
 {

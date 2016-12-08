@@ -59,7 +59,7 @@ int main(int argc,char* argv[])
 	raster.Frustum(-1.0f,1.0f,-1.0f,1.0f,1.00f,100.0f);
 	
 	TexturePool pool(".");
-	Mesh mesh("motor.mesh",&pool);
+	Mesh mesh("crate.mesh",&pool);
 	
 	//main loop
 	
