@@ -30,26 +30,35 @@ namespace damage
 	private:
 	
 		size_t size;
-		size_t capacity;
+		size_t rawSize;
 
 		
 		T* raw;
-		T* ptr;
 	
 	public:
 	
-		Buffer(size_t capacity=32)
+		T* data;
+		
+		
+		
+		Buffer(size_t size)
 		{
-			raw = new T[capacity+1];
+			
+			rawSize=size+1;
+			raw = new T[rawSize];
 			void* tmp=raw;
-			std::align(alignof(T),sizeof(T)*capacity,tmp,size);
-			ptr=static_cast<T*>(tmp);
+			
+			std::align(alignof(T),sizeof(T)*rawSize,tmp,size);
+			data=static_cast<T*>(tmp);
+			this->size=size;
 		}
 		
 		
 		~Buffer()
 		{
-			delete raw;
+			if (raw!=nullptr) {
+				delete raw;
+			}
 		}
 		
 		
@@ -58,11 +67,6 @@ namespace damage
 			return size;
 		}
 		
-		
-		T* Begin()
-		{
-			return ptr;
-		}
 	};
 }
 

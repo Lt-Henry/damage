@@ -221,7 +221,7 @@ void Raster::Worker()
 				
 				
 				for (int n=0;n<cmd.tile->triangles;n++) {
-					DrawTriangle(cmd.tile->bin->Begin()[n],cmd.tile);
+					DrawTriangle(cmd.tile->bin->data[n],cmd.tile);
 				}
 				cmd.tile->triangles=0;
 				
@@ -267,12 +267,12 @@ void Raster::Draw(Mesh* mesh)
 	m4f::Mult(m2,m1,mProjection);
 	m4f::Mult(matrix,m2,mViewport);
 	
-	float* vDest=vertices->Begin();
-	float* vSource=mesh->vertices;
-	float* uvDest=uvs->Begin();
-	float* uvSource=mesh->uvs;
-	Texture** tDest=textures->Begin();
-	Texture** tSource=mesh->textures;
+	float* vDest=vertices->data;
+	float* vSource=mesh->vertices->data;
+	float* uvDest=uvs->data;
+	float* uvSource=mesh->uvs->data;
+	Texture** tDest=textures->data;
+	Texture* tSource=mesh->texture;
 	
 	
 	
@@ -307,16 +307,18 @@ void Raster::Draw(Mesh* mesh)
 		uvDest+=6;
 		uvSource+=6;
 		
-		tDest[0]=tSource[0];
+		/*
+			TODO: rethink this part
+		*/
+		tDest[0]=tSource;
 		tDest++;
-		tSource++;
 		
 		this->numTriangles++;
 	
 	}
 	
 	
-	vDest=vertices->Begin();
+	vDest=vertices->data;
 	
 	for (int n=0;n<numTriangles;n++) {
 	
@@ -346,7 +348,7 @@ void Raster::Draw(Mesh* mesh)
 			for (int i=sx;i<=ex;i++) {
 				Tile* tile =tiles[i+j*numTilesWidth];
 				
-				tile->bin->Begin()[tile->triangles]=n;
+				tile->bin->data[tile->triangles]=n;
 				tile->triangles++;
 			}
 		}
@@ -427,9 +429,9 @@ void Raster::DrawTriangle(int index,Tile* tile)
 	int v1[2];
 	int v2[2];
 	
-	float* vData=vertices->Begin()+(index*12);
-	float* uvData=uvs->Begin()+(index*6);
-	Texture** tData=textures->Begin()+index;
+	float* vData=vertices->data+(index*12);
+	float* uvData=uvs->data+(index*6);
+	Texture** tData=textures->data+(index);
 	
 	v0[0]=vData[0] - screenLeft;
 	v1[0]=vData[4] - screenLeft;
@@ -513,8 +515,8 @@ void Raster::DrawTriangle(int index,Tile* tile)
 					uint16_t tx=u*(tData[0]->width-1);
 					uint16_t ty=v*(tData[0]->height-1);
 
-					tx=tx%tData[0]->width;
-					ty=ty%tData[0]->height;
+					//tx=tx%tData[0]->width;
+					//ty=ty%tData[0]->height;
 
 					uint32_t pixel = tData[0]->data[tx+ty*tData[0]->width];
 					

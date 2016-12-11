@@ -97,7 +97,7 @@ int main(int argc,char* argv[])
 		phi+=0.005f;
 		
 		// move mesh
-		m4f::Translation(mT,0.0f,0.0f,3.0f);
+		m4f::Translation(mT,0.0f,-2.0f,4.0f);
 		m4f::RotationY(mR,phi);
 		
 		m4f::Mult(mesh.matrix,mR,mT);

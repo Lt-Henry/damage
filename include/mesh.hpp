@@ -22,6 +22,7 @@
 #define _DAMAGE_MESH_
 
 #include "texturepool.hpp"
+#include "buffer.hpp"
 
 #include <string>
 #include <cstdint>
@@ -33,13 +34,13 @@ namespace damage
 	
 		uint32_t size;
 		
-		float* vertices;
+		Buffer<float>* vertices;
 		
-		float* normals;
+		Buffer<float>* normals;
 		
-		float* uvs;
+		Buffer<float>* uvs;
 		
-		Texture** textures;
+		Texture* texture;
 		
 		float matrix[16];
 		

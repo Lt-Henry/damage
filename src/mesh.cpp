@@ -34,20 +34,12 @@ using namespace std;
 
 Mesh::Mesh()
 {
-	vertices=nullptr;
-	normals=nullptr;
-	uvs=nullptr;
-	textures=nullptr;
 }
 
 
 Mesh::Mesh(string filename,TexturePool* pool)
 {
 
-	vertices=nullptr;
-	normals=nullptr;
-	uvs=nullptr;
-	textures=nullptr;
 	
 	m4f::Identity(matrix);
 
@@ -66,12 +58,31 @@ Mesh::Mesh(string filename,TexturePool* pool)
 		// version
 		file.read(buffer,1);
 		
+		// texture name
+		file.read(buffer,2);
+		
+		uint16_t len;
+		
+		len=*((uint16_t*)buffer);
+		
+		// texture name
+		file.read(buffer,len);
+		buffer[len]='\0';
+		
+		string textureName(buffer);
+		
+		cout<<"* "<<textureName<<endl;
+		
+		texture=pool->Get(textureName);
+		
 		// num of vertices
 		file.read(buffer,4);
 
 		uint32_t numVertices;
 		
 		numVertices=*((uint32_t*)buffer);
+		
+		cout<<"Mesh vertices: "<<numVertices<<endl;
 		
 		vector<float> verticesData;
 		vector<float> normalsData;
@@ -95,8 +106,6 @@ Mesh::Mesh(string filename,TexturePool* pool)
 			normalsData.push_back(ptr[1]);
 			normalsData.push_back(ptr[2]);
 			
-			// color uint8 x3 (rgb)
-			file.read(buffer,3);
 			
 		}
 		
@@ -113,13 +122,12 @@ Mesh::Mesh(string filename,TexturePool* pool)
 		
 		for (int n=0;n<numTriangles;n++) {
 			
-			// triangle uint32 x4
-			file.read(buffer,16);
+			// triangle uint32 x3
+			file.read(buffer,12);
 			uint32_t* ptr = (uint32_t*)buffer;
 			trianglesData.push_back(ptr[0]);
 			trianglesData.push_back(ptr[1]);
 			trianglesData.push_back(ptr[2]);
-			trianglesData.push_back(ptr[3]);
 			
 			// uv float x6
 			file.read(buffer,24);
@@ -133,93 +141,68 @@ Mesh::Mesh(string filename,TexturePool* pool)
 			uvsData.push_back(fptr[5]);
 		}
 		
-		// num of textures
-		file.read(buffer,4);
-		
-		int numTextures;
-		
-		numTextures=*((uint32_t*)buffer);
-		
-		vector<string> textureData;
-		
-		for (int n=0;n<numTextures;n++) {
-		
-			// texture name len
-			file.read(buffer,2);
-			
-			uint16_t len;
-			
-			len=*((uint16_t*)buffer);
-			
-			// texture name
-			file.read(buffer,len);
-			buffer[len]='\0';
-			
-			string textureName(buffer);
-			
-			cout<<"* "<<textureName<<endl;
-			
-			textureData.push_back(textureName);
-			
-		}
 		
 		file.close();
 		
 		// build mesh structure
 		this->size=numTriangles;
-		this->vertices=new float[this->size * 12];
-		this->normals=new float[this->size * 12];
-		this->uvs=new float[this->size*6];
-		this->textures=new Texture*[this->size];
+		
+		this->vertices=new Buffer<float>(this->size * 12);
+		this->normals=new Buffer<float>(this->size * 12);
+		this->uvs=new Buffer<float>(this->size * 6);
 		
 		for (int n=0;n<numTriangles;n++) {
-			int i0 = trianglesData[(n*4)+0];
-			int i1 = trianglesData[(n*4)+1];
-			int i2 = trianglesData[(n*4)+2];
-			int tx = trianglesData[(n*4)+3];
+			int i0 = trianglesData[(n*3)+0];
+			int i1 = trianglesData[(n*3)+1];
+			int i2 = trianglesData[(n*3)+2];
 			
-			this->vertices[(n*12)+0]=verticesData[(i0*3)+0];
-			this->vertices[(n*12)+1]=verticesData[(i0*3)+1];
-			this->vertices[(n*12)+2]=verticesData[(i0*3)+2];
-			this->vertices[(n*12)+3]=1.0f;
+			this->vertices->data[(n*12)+0]=verticesData[(i0*3)+0];
+			this->vertices->data[(n*12)+1]=verticesData[(i0*3)+1];
+			this->vertices->data[(n*12)+2]=verticesData[(i0*3)+2];
+			this->vertices->data[(n*12)+3]=1.0f;
 			
-			this->vertices[(n*12)+4]=verticesData[(i1*3)+0];
-			this->vertices[(n*12)+5]=verticesData[(i1*3)+1];
-			this->vertices[(n*12)+6]=verticesData[(i1*3)+2];
-			this->vertices[(n*12)+7]=1.0f;
+			this->vertices->data[(n*12)+4]=verticesData[(i1*3)+0];
+			this->vertices->data[(n*12)+5]=verticesData[(i1*3)+1];
+			this->vertices->data[(n*12)+6]=verticesData[(i1*3)+2];
+			this->vertices->data[(n*12)+7]=1.0f;
 			
-			this->vertices[(n*12)+8]=verticesData[(i2*3)+0];
-			this->vertices[(n*12)+9]=verticesData[(i2*3)+1];
-			this->vertices[(n*12)+10]=verticesData[(i2*3)+2];
-			this->vertices[(n*12)+11]=1.0f;
+			this->vertices->data[(n*12)+8]=verticesData[(i2*3)+0];
+			this->vertices->data[(n*12)+9]=verticesData[(i2*3)+1];
+			this->vertices->data[(n*12)+10]=verticesData[(i2*3)+2];
+			this->vertices->data[(n*12)+11]=1.0f;
 			
-			this->normals[(n*12)+0]=normalsData[(i0*3)+0];
-			this->normals[(n*12)+1]=normalsData[(i0*3)+1];
-			this->normals[(n*12)+2]=normalsData[(i0*3)+2];
-			this->normals[(n*12)+3]=0.0f;
+			this->normals->data[(n*12)+0]=normalsData[(i0*3)+0];
+			this->normals->data[(n*12)+1]=normalsData[(i0*3)+1];
+			this->normals->data[(n*12)+2]=normalsData[(i0*3)+2];
+			this->normals->data[(n*12)+3]=0.0f;
 			
-			this->normals[(n*12)+4]=normalsData[(i1*3)+0];
-			this->normals[(n*12)+5]=normalsData[(i1*3)+1];
-			this->normals[(n*12)+6]=normalsData[(i1*3)+2];
-			this->normals[(n*12)+7]=0.0f;
+			this->normals->data[(n*12)+4]=normalsData[(i1*3)+0];
+			this->normals->data[(n*12)+5]=normalsData[(i1*3)+1];
+			this->normals->data[(n*12)+6]=normalsData[(i1*3)+2];
+			this->normals->data[(n*12)+7]=0.0f;
 			
-			this->normals[(n*12)+0]=normalsData[(i2*3)+0];
-			this->normals[(n*12)+1]=normalsData[(i2*3)+1];
-			this->normals[(n*12)+2]=normalsData[(i2*3)+2];
-			this->normals[(n*12)+3]=0.0f;
+			this->normals->data[(n*12)+0]=normalsData[(i2*3)+0];
+			this->normals->data[(n*12)+1]=normalsData[(i2*3)+1];
+			this->normals->data[(n*12)+2]=normalsData[(i2*3)+2];
+			this->normals->data[(n*12)+3]=0.0f;
 			
-			this->uvs[(n*6)+0]=uvsData[(n*6)+0];
-			this->uvs[(n*6)+1]=uvsData[(n*6)+1];
+			this->uvs->data[(n*6)+0]=uvsData[(n*6)+0];
+			this->uvs->data[(n*6)+1]=uvsData[(n*6)+1];
 			
-			this->uvs[(n*6)+2]=uvsData[(n*6)+2];
-			this->uvs[(n*6)+3]=uvsData[(n*6)+3];
+			this->uvs->data[(n*6)+2]=uvsData[(n*6)+2];
+			this->uvs->data[(n*6)+3]=uvsData[(n*6)+3];
 			
-			this->uvs[(n*6)+4]=uvsData[(n*6)+4];
-			this->uvs[(n*6)+5]=uvsData[(n*6)+5];
+			this->uvs->data[(n*6)+4]=uvsData[(n*6)+4];
+			this->uvs->data[(n*6)+5]=uvsData[(n*6)+5];
 			
-			this->textures[n]=pool->Get(textureData[tx]);
 		}
 		
+		for (int n=0;n<this->uvs->Size();n++) {
+			if(n%2==0)
+				cout<<"U "<<this->uvs->data[n]<<endl;
+			else
+				cout<<"V "<<this->uvs->data[n]<<endl;
+		}
 	}
 		
 }
@@ -227,19 +210,7 @@ Mesh::Mesh(string filename,TexturePool* pool)
 
 Mesh::~Mesh()
 {
-	if (vertices!=nullptr) {
-		delete vertices;
-	}
-	
-	if (normals!=nullptr) {
-		delete normals;
-	}
-	
-	if (uvs!=nullptr) {
-		delete uvs;
-	}
-	
-	if (textures!=nullptr) {
-		delete textures;
-	}
+	delete vertices;
+	delete normals;
+	delete uvs;
 }
