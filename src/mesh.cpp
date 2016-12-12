@@ -197,12 +197,7 @@ Mesh::Mesh(string filename,TexturePool* pool)
 			
 		}
 		
-		for (int n=0;n<this->uvs->Size();n++) {
-			if(n%2==0)
-				cout<<"U "<<this->uvs->data[n]<<endl;
-			else
-				cout<<"V "<<this->uvs->data[n]<<endl;
-		}
+	
 	}
 		
 }

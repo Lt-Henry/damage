@@ -422,12 +422,12 @@ void Raster::DrawTriangle(int index,Tile* tile)
 		https://fgiesen.wordpress.com/2013/02/10/optimizing-the-basic-rasterizer/
 	*/
 	
-	int screenLeft = tile->x;
-	int screenTop = tile->y;
+	int32_t screenLeft = tile->x;
+	int32_t screenTop = tile->y;
 
-	int v0[2];
-	int v1[2];
-	int v2[2];
+	int32_t v0[2];
+	int32_t v1[2];
+	int32_t v2[2];
 	
 	float* vData=vertices->data+(index*12);
 	float* uvData=uvs->data+(index*6);
@@ -441,8 +441,8 @@ void Raster::DrawTriangle(int index,Tile* tile)
 	v1[1]=vData[5] - screenTop;
 	v2[1]=vData[9] - screenTop;
 
-	int minx,miny;
-	int maxx,maxy;
+	int32_t minx,miny;
+	int32_t maxx,maxy;
 	
 	minx=std::min({v0[0],v1[0],v2[0]});
 	
@@ -464,16 +464,26 @@ void Raster::DrawTriangle(int index,Tile* tile)
 	}
 	*/
 	
-	int A01 = v0[1] - v1[1], B01 = v1[0] - v0[0];
-	int A12 = v1[1] - v2[1], B12 = v2[0] - v1[0];
-	int A20 = v2[1] - v0[1], B20 = v0[0] - v2[0];
+	int32_t A[4];
+	int32_t B[4];
 	
-	int p[2] = { minx, miny };
+	// A01 B01
+	A[2] = v0[1] - v1[1], B[2] = v1[0] - v0[0];
+	// A12 B12
+	A[0] = v1[1] - v2[1], B[0] = v2[0] - v1[0];
+	// A20 B20
+	A[1] = v2[1] - v0[1], B[1] = v0[0] - v2[0];
+	
+	int32_t p[2] = { minx, miny };
 
-	int w0_row = orient(v1, v2, p);
-	int w1_row = orient(v2, v0, p);
-	int w2_row = orient(v0, v1, p);
+	int32_t wrow[4];
 	
+	wrow[0] = orient(v1, v2, p);
+	wrow[1] = orient(v2, v0, p);
+	wrow[2] = orient(v0, v1, p);
+	
+	
+	// this can be pre-computed
 	float rz[4];
 	
 	rz[0]=1.0f/vData[3];
@@ -484,15 +494,17 @@ void Raster::DrawTriangle(int index,Tile* tile)
 	
 	
 	for (p[1]=miny;p[1]<=maxy;p[1]++) {
-		int w0 = w0_row;
-		int w1 = w1_row;
-		int w2 = w2_row;
+		int32_t w[4];
+		
+		w[0] = wrow[0];
+		w[1] = wrow[1];
+		w[2] = wrow[2];
 	
 		for (p[0]=minx;p[0]<=maxx;p[0]++) {
 		
-			if (w0>=0 and w1>=0 and w2>=0) {
+			if (w[0]>=0 and w[1]>=0 and w[2]>=0) {
 			
-				float fw[4]={w0,w1,w2,0.0f};
+				float fw[4]={w[0],w[1],w[2],0.0f};
 				
 				fw[0]*=area;
 				fw[1]*=area;
@@ -512,8 +524,8 @@ void Raster::DrawTriangle(int index,Tile* tile)
 					u*=wz;
 					v*=wz;
 
-					uint16_t tx=u*(tData[0]->width-1);
-					uint16_t ty=v*(tData[0]->height-1);
+					uint32_t tx=u*(tData[0]->width-1);
+					uint32_t ty=v*(tData[0]->height-1);
 
 					//tx=tx%tData[0]->width;
 					//ty=ty%tData[0]->height;
@@ -527,14 +539,14 @@ void Raster::DrawTriangle(int index,Tile* tile)
 				
 			}
 			
-			w0 += A12;
-			w1 += A20;
-			w2 += A01;
+			w[0] += A[0];
+			w[1] += A[1];
+			w[2] += A[2];
 		}
 		
-		w0_row += B12;
-		w1_row += B20;
-		w2_row += B01;
+		wrow[0] += B[0];
+		wrow[1] += B[1];
+		wrow[2] += B[2];
 	}
 	
 	
