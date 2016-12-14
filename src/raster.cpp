@@ -28,6 +28,24 @@ using namespace damage;
 using namespace damage::math;
 using namespace std;
 
+static void printvec(const float* v)
+{
+	cout<<"v "<<v[0]<<","<<v[1]<<","<<v[2]<<","<<v[3]<<endl;
+}
+
+static void printmat(const float* m)
+{
+	for (int y=0;y<4;y++) {
+	
+		cout<<"[";
+		for (int x=0;x<4;x++) {
+			cout<<" "<<m[x+y*4];
+		}
+		cout<<" ]"<<endl;
+		
+	}
+}
+
 
 Tile::Tile(int x,int y)
 {
@@ -128,25 +146,35 @@ void Raster::Resize(SDL_Texture* texture,int numTilesWidth,int numTilesHeight)
 		}
 	}
 	
+	// hardwired viewport
+	float l,r,t,b,n,f;
+	
+	l=0.0f;
+	r=screenWidth;
+	t=0.0f;
+	b=screenHeight;
+	n=0.0f;
+	f=1.0f;
+	
 	// viewport matrix
-	mViewport[0]=screenWidth/2.0f;
+	mViewport[0]=(r-l)/2.0f;
 	mViewport[1]=0.0f;
 	mViewport[2]=0.0f;
-	mViewport[3]=screenWidth/2.0f;
+	mViewport[3]=0.0f;
 	
 	mViewport[4]=0.0f;
-	mViewport[5]=-screenHeight/2.0f;
+	mViewport[5]=(t-b)/2.0f;
 	mViewport[6]=0.0f;
-	mViewport[7]=screenHeight/2.0f;
+	mViewport[7]=0.0f;
 	
 	mViewport[8]=0.0f;
 	mViewport[9]=0.0f;
-	mViewport[10]=1.0f;
+	mViewport[10]=(f-n)/2.0f;
 	mViewport[11]=0.0f;
 	
-	mViewport[12]=0.0f;
-	mViewport[13]=0.0f;
-	mViewport[14]=0.0f;
+	mViewport[12]=(r+l)/2.0f;
+	mViewport[13]=(t+b)/2.0f;
+	mViewport[14]=(f+n)/2.0f;
 	mViewport[15]=1.0f;
 }
 
@@ -162,22 +190,22 @@ void Raster::Frustum(float left,float right,float top,float bottom,float near,fl
 
 	mProjection[0]=(2.0f*near)/(right-left);
 	mProjection[1]=0.0f;
-	mProjection[2]=(right+left)/(right-left);
+	mProjection[2]=0.0f;
 	mProjection[3]=0.0f;
 	
 	mProjection[4]=0.0f;
 	mProjection[5]=(2.0f*near)/(top-bottom);
-	mProjection[6]=(top+bottom)/(top-bottom);
+	mProjection[6]=0.0f;
 	mProjection[7]=0.0f;
 
-	mProjection[8]=0.0f;
-	mProjection[9]=0.0f;
+	mProjection[8]=(right+left)/(right-left);
+	mProjection[9]=(top+bottom)/(top-bottom);
 	mProjection[10]=-(far+near)/(far-near);
-	mProjection[11]=-(2.0f*far*near)/(far-near);
+	mProjection[11]=-1.0;
 
 	mProjection[12]=0.0f;
 	mProjection[13]=0.0f;
-	mProjection[14]=-1.0f;
+	mProjection[14]=-(2.0f*far*near)/(far-near);
 	mProjection[15]=0.0f;
 	
 }
@@ -262,10 +290,15 @@ void Raster::Draw(Mesh* mesh)
 	float matrix[16];
 	float m1[16];
 	float m2[16];
-	
+	/*
 	m4f::Set(m1,mesh->matrix);
 	m4f::Mult(m2,m1,mProjection);
 	m4f::Mult(matrix,m2,mViewport);
+	*/
+	m4f::Set(m1,mViewport);
+	m4f::Mult(m2,m1,mProjection);
+	m4f::Mult(matrix,m2,mesh->matrix);
+
 	
 	float* vDest=vertices->data;
 	float* vSource=mesh->vertices->data;
@@ -274,6 +307,29 @@ void Raster::Draw(Mesh* mesh)
 	Texture** tDest=textures->data;
 	Texture* tSource=mesh->texture;
 	
+	float va[4]={0,0,-1.5,1};
+	float vb[4];
+	float vc[4];
+	
+	cout<<"Projection:"<<endl;
+	printmat(mProjection);
+	cout<<"Viewport:"<<endl;
+	printmat(mViewport);
+
+	cout<<"Eye coordinates"<<endl;
+	printvec(va);
+	
+	cout<<"Clip coordinates:"<<endl;
+	v4f::Mult(vb,va,mProjection);
+	printvec(vb);
+	
+	cout<<"NDC coordinates:"<<endl;
+	v4f::Homogeneus(vb);
+	printvec(vb);
+	
+	cout<<"Window coordinates:"<<endl;
+	v4f::Mult(vc,vb,mViewport);
+	printvec(vc);
 	
 	
 	for (int n=0;n<mesh->size;n++) {

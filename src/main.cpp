@@ -53,7 +53,7 @@ int main(int argc,char* argv[])
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 	texture = SDL_CreateTexture(renderer,SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, WIDTH,HEIGHT);
 	
-	Raster raster(3);
+	Raster raster(1);
 	
 	raster.Resize(texture,WIDTH/TILE_SIZE,HEIGHT/TILE_SIZE);
 	raster.Frustum(-1.0f,1.0f,-1.0f,1.0f,1.00f,100.0f);
@@ -97,10 +97,10 @@ int main(int argc,char* argv[])
 		phi+=0.005f;
 		
 		// move mesh
-		m4f::Translation(mT,0.0f,0.0f,3.0f);
+		m4f::Translation(mesh.matrix,0.0f,0.0f,3.0f);
 		m4f::RotationY(mR,phi);
 		
-		m4f::Mult(mesh.matrix,mR,mT);
+		//m4f::Mult(mesh.matrix,mT,mR);
 		
 		begin = std::chrono::steady_clock::now();
 		raster.Draw(&mesh);
