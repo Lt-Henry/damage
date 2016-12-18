@@ -93,7 +93,7 @@ namespace damage
 		
 		/*! vbo */
 		int numTriangles;
-		Buffer<float>* vertices;
+		Buffer<int16_t>* vertices;
 		Buffer<float>* normals;
 		Buffer<float>* uvs;
 		Buffer<Texture*>* textures;

@@ -88,7 +88,7 @@ Raster::Raster(int numThreads)
 	m4f::Identity(mViewport);
 	
 	// vbo
-	vertices=new Buffer<float>(12*VBO_SIZE);
+	vertices=new Buffer<int16_t>(6*VBO_SIZE);
 	normals=new Buffer<float>(12*VBO_SIZE);
 	uvs=new Buffer<float>(6*VBO_SIZE);
 	textures=new Buffer<Texture*>(VBO_SIZE);
@@ -331,6 +331,49 @@ void Raster::Draw(Mesh* mesh)
 	v4f::Mult(vc,vb,mViewport);
 	printvec(vc);
 	
+	for (int n=0;n<mesh->size;n++) {
+		float vEye[12];
+		float vClip[12];
+		
+		// Eye coordinates
+		v4f::Mult(vEye,vSource,mesh->matrix);
+		
+		// Clip coordinates
+		v4f::Mult(vClip,vEye,mProjection);
+		
+		// TODO: split triangles
+		if (vClip[3]<near or vClip[7]<near or vClip[11]<near or
+			vClip[3]>far or vClip[7]>far or vClip[11]>far) {
+			continue;
+		}
+		
+		// W divide
+		float rw[4]; // reciprocal w
+		
+		rw[0]=1.0f/vClip[3];
+		rw[1]=1.0f/vClip[7];
+		rw[2]=1.0f/vClip[11];
+		
+		float vNDC[12];
+		
+		vNDC[0]=vClip[0]*rw[0];
+		vNDC[1]=vClip[1]*rw[0];
+		vNDC[2]=vClip[2]*rw[0];
+		vNDC[3]=rw[0];
+		
+		vNDC[4]=vClip[4]*rw[1];
+		vNDC[5]=vClip[5]*rw[1];
+		vNDC[6]=vClip[6]*rw[1];
+		vNDC[7]=rw[1];
+		
+		vNDC[8]=vClip[8]*rw[2];
+		vNDC[9]=vClip[9]*rw[2];
+		vNDC[10]=vClip[10]*rw[2];
+		vNDC[11]=rw[2];
+		
+		// viewport
+		
+	}
 	
 	for (int n=0;n<mesh->size;n++) {
 	
